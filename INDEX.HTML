@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+    .start-btn{
+    display:inline-block;
+    padding:15px 45px;
+    border-radius:30px;
+    background:#00aaff;
+    color:white;
+    text-decoration:none;
+    font-size:18px;
+    transition:.3s;
+}
+
+.start-btn:hover{
+    background:#0077ff;
+}
+    *{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial, sans-serif;
+}
+
+
+body{
+
+height:100vh;
+overflow:hidden;
+color:white;
+
+}
+
+
+
+/* Video */
+
+
+.background-video{
+
+position:absolute;
+width:100%;
+height:100%;
+object-fit:cover;
+z-index:-2;
+
+}
+
+
+
+.overlay{
+
+position:absolute;
+width:100%;
+height:100%;
+
+background:
+linear-gradient(
+rgba(0,0,0,.7),
+rgba(0,0,0,.8)
+);
+
+z-index:-1;
+
+}
+
+
+
+/* Header */
+
+
+header{
+
+height:80px;
+
+display:flex;
+justify-content:space-between;
+align-items:center;
+
+
+
+}
+
+
+
+header h2{
+
+font-size:30px;
+letter-spacing:3px;
+
+}
+
+
+nav a{
+
+color:white;
+text-decoration:none;
+
+margin-left:40px;
+
+font-size:18px;
+
+transition:.3s;
+
+}
+
+
+nav a:hover{
+
+color:#00aaff;
+
+}
+
+
+
+/* Hero */
+
+
+.hero{
+
+height:80vh;
+
+display:flex;
+
+flex-direction:column;
+
+justify-content:center;
+
+align-items:center;
+
+text-align:center;
+
+}
+
+
+.hero h1{
+
+font-size:70px;
+
+letter-spacing:5px;
+
+}
+
+
+.hero p{
+
+font-size:25px;
+
+margin:20px;
+
+color:#ccc;
+
+}
+
+
+
+button{
+
+padding:15px 45px;
+
+border:none;
+
+border-radius:30px;
+
+background:#00aaff;
+
+color:white;
+
+font-size:18px;
+
+cursor:pointer;
+
+}
+
+
+
+/* Floating Icons */
+
+
+.icon{
+
+position:absolute;
+
+width:90px;
+
+animation:float 6s infinite ease-in-out;
+
+}
+
+
+
+.premiere{
+
+top:20%;
+left:15%;
+
+}
+
+
+
+.photoshop{
+
+top:60%;
+left:10%;
+
+animation-delay:1s;
+
+}
+
+
+
+.illustrator{
+
+top:25%;
+right:15%;
+
+animation-delay:2s;
+
+}
+
+
+
+.after{
+
+bottom:15%;
+right:20%;
+
+animation-delay:3s;
+
+}
+
+
+
+.lightroom{
+
+bottom:20%;
+left:45%;
+
+animation-delay:4s;
+
+}
+
+
+
+
+
+@keyframes float{
+
+
+0%{
+
+transform:translateY(0px) rotate(0deg);
+
+}
+
+
+50%{
+
+transform:translateY(-40px) rotate(15deg);
+
+}
+
+
+100%{
+
+transform:translateY(0px) rotate(0deg);
+
+}
+
+
+}
+</style>
+<title>Vision+</title>
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+<!-- Video Background -->
+
+<video autoplay muted loop class="background-video">
+    <source src="img/video.mp4" type="video/mp4">
+</video>
+
+
+<!-- Overlay -->
+
+<div class="overlay"></div>
+
+
+<!-- Navbar -->
+
+<header>
+
+    <h2>VISION+</h2>
+
+    <nav>
+        <a href="#">HOME</a>
+        <a href="#">EFFECTS</a>
+    </nav>
+
+</header>
+
+
+
+<!-- Floating Adobe Icons -->
+
+
+<img class="icon premiere" src="img/pngwing.com (2).png">
+
+<img class="icon photoshop" src="img/pngwing.com.png">
+
+<img class="icon illustrator" src="img/pngwing.com (3).png">
+
+<img class="icon after" src="img/pngwing.com (1).png">
+
+<img class="icon lightroom" src="img/pngwing.com (4).png">
+
+
+
+<!-- Center Content -->
+
+
+<section class="hero">
+
+<h1>
+CREATIVE<br>
+DIGITAL WORLD
+</h1>
+
+<p>
+Design • Edit • Create
+</p>
+
+<a href="index2.html" class="start-btn">
+START NOW
+</a>
+
+
+</section>
+
+
+
+</body>
+</html>
