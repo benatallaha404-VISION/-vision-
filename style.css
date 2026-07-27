@@ -194,7 +194,7 @@ body {
   display: flex;
   gap: 20px;
   flex-wrap: wrap;
-  padding: 16px 20px;
+  padding: 16px 360px;
   background: white;
   border-radius: var(--radius);
   box-shadow: 0 2px 10px rgba(0,0,0,0.05);
