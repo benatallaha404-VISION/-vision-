@@ -3,15 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My Store</title>
+  <title id="siteTitle">My Store</title>
   <link rel="stylesheet" href="style.css" />
-
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
 </head>
 <body>
+  <!-- ===== HEADER ===== -->
   <header class="header">
     <div class="container header-inner">
       <div class="brand">
@@ -21,45 +23,61 @@
           <p id="brandNick">best shop online</p>
         </div>
       </div>
-
       <div class="search-wrap">
         <input id="searchInput" class="search-box" type="search" placeholder="Search products..." />
       </div>
-
       <div class="header-right">
-        <a href="admin.html"><button>Admin</button></a>
+        <a href="admin.html"><button class="admin-btn">Admin</button></a>
+        <button class="cart-btn" onclick="toggleCart()"><i class="fas fa-shopping-cart"></i> <span id="cartCount">0</span></button>
       </div>
     </div>
   </header>
 
+  <!-- ===== SLIDER ===== -->
   <section class="container hero-slider">
     <div class="slider-track" id="sliderTrack"></div>
     <div class="slider-nav">
-      <button id="prevSlide">‹</button>
-      <button id="nextSlide">›</button>
+      <button id="prevSlide"><i class="fas fa-chevron-left"></i></button>
+      <button id="nextSlide"><i class="fas fa-chevron-right"></i></button>
     </div>
+    <div class="slider-dots" id="sliderDots"></div>
   </section>
 
+  <!-- ===== CATEGORIES ===== -->
   <section class="container section">
     <h2 class="section-title">Categories</h2>
     <div class="categories-grid" id="categoriesGrid"></div>
   </section>
 
+  <!-- ===== FILTERS & SORT ===== -->
   <section class="container section">
-    <h2 class="section-title">Special Offers</h2>
-    <div class="products-grid" id="specialOffersGrid"></div>
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label>Category:</label>
+        <select id="filterCategory">
+          <option value="all">All Categories</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Sort by:</label>
+        <select id="sortProducts">
+          <option value="default">Default</option>
+          <option value="price-asc">Price: Low to High</option>
+          <option value="price-desc">Price: High to Low</option>
+          <option value="best-seller">Best Sellers</option>
+          <option value="newest">Newest</option>
+        </select>
+      </div>
+    </div>
   </section>
 
-  <section class="container section">
-    <h2 class="section-title">Best Sellers</h2>
-    <div class="products-grid" id="bestSellersGrid"></div>
-  </section>
-
+  <!-- ===== PRODUCTS ===== -->
   <section class="container section">
     <h2 class="section-title">All Products</h2>
     <div class="products-grid" id="productsGrid"></div>
   </section>
 
+  <!-- ===== FOOTER ===== -->
   <footer class="footer">
     <div class="container">
       <h3 id="footerStoreName">My Store</h3>
@@ -69,9 +87,28 @@
         <a href="#">Shipping & Returns</a>
         <a href="#">Contact</a>
       </div>
-      <p id="footerText">© 2026 My Store - All rights reserved</p>
+      <p id="footerText">© 2025 My Store - All rights reserved</p>
     </div>
   </footer>
+
+  <!-- ===== CART SIDEBAR ===== -->
+  <div class="cart-sidebar" id="cartSidebar">
+    <div class="cart-header">
+      <h3><i class="fas fa-shopping-cart"></i> Your Cart</h3>
+      <span class="close-cart" onclick="toggleCart()">&times;</span>
+    </div>
+    <div class="cart-items" id="cartItems">
+      <p class="empty-cart">Your cart is empty</p>
+    </div>
+    <div class="cart-footer">
+      <div class="cart-total">
+        <span>Total:</span>
+        <span class="total-amount" id="cartTotal">0 DZD</span>
+      </div>
+      <button class="checkout-btn" onclick="proceedToCheckout()">Proceed to Checkout</button>
+    </div>
+  </div>
+  <div class="cart-overlay" onclick="toggleCart()"></div>
 
   <script src="config.js"></script>
   <script src="app.js"></script>

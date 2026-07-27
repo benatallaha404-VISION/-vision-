@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Dashboard</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -14,7 +15,7 @@
 <body>
   <div class="admin-layout">
     <aside class="side-menu">
-      <h2 style="color:white;text-align:center;">📊 Dashboard</h2>
+      <h2>📊 Dashboard</h2>
       <button class="menu-btn active" data-target="panel-design">🎨 Design</button>
       <button class="menu-btn" data-target="panel-products">📦 Products</button>
       <button class="menu-btn" data-target="panel-categories">📂 Categories</button>
@@ -25,12 +26,12 @@
       <button class="menu-btn" data-target="panel-shipping">🚚 Shipping</button>
       <button class="menu-btn" data-target="panel-comments">💬 Comments</button>
       <button class="menu-btn" data-target="panel-settings">⚙️ Settings</button>
-      <hr style="border-color:#333;margin:20px 0;">
-      <a href="index.html" style="color:white;text-decoration:none;display:block;text-align:center;">← Back to Store</a>
+      <hr />
+      <a href="index.html">← Back to Store</a>
     </aside>
 
     <main class="admin-content">
-      <!-- Design Panel -->
+      <!-- ===== DESIGN PANEL ===== -->
       <section id="panel-design" class="admin-panel active">
         <h1>🎨 Design Settings</h1>
         <div class="form-group">
@@ -58,6 +59,10 @@
           <input type="color" id="accentColorInput" />
         </div>
         <div class="form-group">
+          <label>Text Color</label>
+          <input type="color" id="textColorInput" />
+        </div>
+        <div class="form-group">
           <label>Logo URL</label>
           <input type="text" id="logoUrlInput" placeholder="Logo URL" />
         </div>
@@ -65,26 +70,47 @@
           <label>Footer Text</label>
           <textarea id="footerTextInput" placeholder="Footer text"></textarea>
         </div>
+        <div class="form-group">
+          <label>Card Style</label>
+          <select id="cardStyleInput">
+            <option value="classic">Classic</option>
+            <option value="premium">Premium</option>
+            <option value="gold">Gold</option>
+          </select>
+        </div>
         <button id="saveDesignBtn" class="save-btn">💾 Save Design</button>
         <div id="designMessage" class="message"></div>
       </section>
 
-      <!-- Products Panel -->
+      <!-- ===== PRODUCTS PANEL ===== -->
       <section id="panel-products" class="admin-panel">
         <h1>📦 Products</h1>
+        
         <form id="productForm" class="admin-form">
           <div class="form-group">
             <label>Product Name *</label>
             <input type="text" id="productName" placeholder="Product name" required />
           </div>
+          
           <div class="form-group">
             <label>Description *</label>
             <textarea id="productDescription" placeholder="Product description" required></textarea>
           </div>
+          
+          <!-- Drop Zone for Images -->
           <div class="form-group">
-            <label>Images</label>
-            <input type="file" id="productImages" accept="image/*" multiple />
+            <label>Images * (Upload at least one image)</label>
+            <div id="productDropZone" class="drop-zone">
+              <div class="drop-zone-content">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p>Drag & drop images here</p>
+                <p class="small-note">or click to select files</p>
+              </div>
+              <input type="file" id="productImages" accept="image/*" multiple required />
+            </div>
+            <div id="productImagePreview" class="image-preview-grid"></div>
           </div>
+
           <div class="form-row">
             <div class="form-group">
               <label>Price *</label>
@@ -99,14 +125,11 @@
               <input type="number" id="productAfterDiscount" placeholder="After discount" />
             </div>
           </div>
+
           <div class="form-row">
             <div class="form-group">
-              <label>Discount %</label>
-              <input type="number" id="productDiscountPercent" placeholder="Discount percent" />
-            </div>
-            <div class="form-group">
-              <label>Mode *</label>
-              <select id="productMode" required>
+              <label>Mode</label>
+              <select id="productMode">
                 <option value="buy">Buy</option>
                 <option value="rent">Rent</option>
               </select>
@@ -115,16 +138,6 @@
               <label>Stock</label>
               <input type="number" id="productStock" placeholder="Stock" />
             </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Sizes</label>
-              <input type="text" id="productSizes" placeholder="Sizes (comma separated)" />
-            </div>
-            <div class="form-group">
-              <label>Colors</label>
-              <input type="text" id="productColors" placeholder="Colors (comma separated)" />
-            </div>
             <div class="form-group">
               <label>Category</label>
               <select id="productCategory">
@@ -132,22 +145,37 @@
               </select>
             </div>
           </div>
+
           <div class="form-row">
             <div class="form-group">
-              <label><input type="checkbox" id="isBestSeller" /> Best seller</label>
+              <label>Sizes</label>
+              <input type="text" id="productSizes" placeholder="S, M, L, XL" />
             </div>
             <div class="form-group">
-              <label><input type="checkbox" id="isSpecialOffer" /> Special offer</label>
+              <label>Colors</label>
+              <input type="text" id="productColors" placeholder="Red, Blue, Black" />
             </div>
           </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label><input type="checkbox" id="isBestSeller" /> Best Seller</label>
+            </div>
+            <div class="form-group">
+              <label><input type="checkbox" id="isSpecialOffer" /> Special Offer</label>
+            </div>
+          </div>
+
           <button type="submit" class="save-btn">💾 Save Product</button>
         </form>
+
         <div id="productMessage" class="message"></div>
+        
         <h2>Product List</h2>
         <div id="productsAdminList" class="products-grid"></div>
       </section>
 
-      <!-- Categories Panel -->
+      <!-- ===== CATEGORIES PANEL ===== -->
       <section id="panel-categories" class="admin-panel">
         <h1>📂 Categories</h1>
         <div class="form-row">
@@ -162,45 +190,52 @@
         <div id="categoriesAdminList" class="categories-grid"></div>
       </section>
 
-      <!-- Slider Panel - WITH IMAGE UPLOAD -->
+      <!-- ===== SLIDER PANEL ===== -->
       <section id="panel-slider" class="admin-panel">
         <h1>🖼️ Slider</h1>
+        
         <div class="form-group">
           <label>Slide Title *</label>
           <input type="text" id="slideTitle" placeholder="Slide title" />
         </div>
+        
         <div class="form-group">
           <label>Slide Text *</label>
           <textarea id="slideText" placeholder="Slide text"></textarea>
         </div>
+        
+        <!-- Drop Zone for Slide Image -->
         <div class="form-group">
-          <label>Upload Image</label>
-          <input type="file" id="slideImageFile" accept="image/*" />
-          <p class="small-note">Or enter image URL below</p>
+          <label>Slide Image *</label>
+          <div id="slideDropZone" class="drop-zone">
+            <div class="drop-zone-content">
+              <i class="fas fa-cloud-upload-alt"></i>
+              <p>Drag & drop image here</p>
+              <p class="small-note">or click to select file</p>
+            </div>
+            <input type="file" id="slideImageFile" accept="image/*" required />
+          </div>
+          <div id="slideImagePreview" class="image-preview-grid"></div>
         </div>
-        <div class="form-group">
-          <label>Image URL (optional)</label>
-          <input type="text" id="slideImage" placeholder="Slide image URL" />
-        </div>
+
         <button id="addSlideBtn" class="save-btn">➕ Add Slide</button>
         <div id="slideMessage" class="message"></div>
         <div id="slidesAdminList"></div>
       </section>
 
-      <!-- Orders Panel -->
+      <!-- ===== ORDERS PANEL ===== -->
       <section id="panel-orders" class="admin-panel">
         <h1>📋 Orders</h1>
-        <div id="orderMessage" class="message"></div>
         <div id="ordersAdminList" class="orders-grid"></div>
       </section>
 
-      <!-- Profits Panel -->
+      <!-- ===== PROFITS PANEL ===== -->
       <section id="panel-profits" class="admin-panel">
         <h1>💰 Monthly Profits</h1>
         <div id="monthlyProfits"></div>
       </section>
 
-      <!-- Coupons Panel -->
+      <!-- ===== COUPONS PANEL ===== -->
       <section id="panel-coupons" class="admin-panel">
         <h1>🏷️ Coupons</h1>
         <div class="form-row">
@@ -218,7 +253,7 @@
         <div id="couponsAdminList" class="coupons-grid"></div>
       </section>
 
-      <!-- Shipping Panel -->
+      <!-- ===== SHIPPING PANEL ===== -->
       <section id="panel-shipping" class="admin-panel">
         <h1>🚚 Shipping</h1>
         <div class="form-row">
@@ -239,13 +274,13 @@
         <div id="shippingAdminList" class="shipping-grid"></div>
       </section>
 
-      <!-- Comments Panel -->
+      <!-- ===== COMMENTS PANEL ===== -->
       <section id="panel-comments" class="admin-panel">
         <h1>💬 Comments</h1>
         <div id="commentsAdminList" class="comments-grid"></div>
       </section>
 
-      <!-- Settings Panel -->
+      <!-- ===== SETTINGS PANEL ===== -->
       <section id="panel-settings" class="admin-panel">
         <h1>⚙️ Integration Settings</h1>
         <div class="form-group">

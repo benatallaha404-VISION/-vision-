@@ -1,10 +1,9 @@
 // =====================================
-// ADMIN.JS - Full admin dashboard
+// ADMIN.JS - Full admin dashboard - FIXED
 // =====================================
 
 console.log("✅ Admin.js loaded");
 
-// Initialize Firebase
 if (typeof firebase !== "undefined" && firebase.apps.length === 0) {
   try {
     firebase.initializeApp(firebaseConfig);
@@ -15,22 +14,14 @@ if (typeof firebase !== "undefined" && firebase.apps.length === 0) {
 }
 
 const db = firebase.firestore();
-const storage = firebase.storage();
+// Note: we no longer use firebase.storage() — image uploads now go through Cloudinary (free, no credit card)
 
-// Helper functions
-function byId(id) {
-  return document.getElementById(id);
-}
-
-function safeValue(id, fallback = "") {
-  const el = byId(id);
-  return el ? el.value : fallback;
-}
-
-function safeChecked(id) {
-  const el = byId(id);
-  return el ? el.checked : false;
-}
+// ============================================
+// HELPERS
+// ============================================
+function byId(id) { return document.getElementById(id); }
+function safeValue(id, fallback = "") { const el = byId(id); return el ? el.value : fallback; }
+function safeChecked(id) { const el = byId(id); return el ? el.checked : false; }
 
 function showMessage(id, text, isSuccess = true) {
   const el = byId(id);
@@ -43,9 +34,130 @@ function showMessage(id, text, isSuccess = true) {
   el.style.borderRadius = "10px";
   el.style.margin = "10px 0";
   el.style.border = isSuccess ? "1px solid #12813a" : "1px solid #dc3545";
-  setTimeout(() => {
-    el.style.display = "none";
-  }, 6000);
+  setTimeout(() => el.style.display = "none", 8000);
+}
+
+// ============================================
+// DROP ZONE
+// ============================================
+function setupDropZone(dropZoneId, fileInputId, previewId, multiple = true) {
+  const dropZone = byId(dropZoneId);
+  const fileInput = byId(fileInputId);
+  const preview = byId(previewId);
+  if (!dropZone || !fileInput) return;
+
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    fileInput.files = e.dataTransfer.files;
+    handleFiles(fileInput, preview, multiple);
+  });
+  fileInput.addEventListener('change', () => handleFiles(fileInput, preview, multiple));
+}
+
+function handleFiles(fileInput, preview, multiple) {
+  if (!preview) return;
+  const files = fileInput.files;
+  if (files.length === 0) { preview.innerHTML = ''; return; }
+
+  let html = '';
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      html += `<div class="preview-item"><img src="${e.target.result}" /><span class="remove-preview" onclick="removePreview(this, ${i})">×</span></div>`;
+      preview.innerHTML = html;
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function removePreview(el, index) {
+  const preview = el.closest('.image-preview-grid');
+  if (!preview) return;
+  const items = preview.querySelectorAll('.preview-item');
+  if (items.length > index) items[index].remove();
+  const dropZone = preview.closest('.form-group');
+  if (dropZone) {
+    const fileInput = dropZone.querySelector('input[type="file"]');
+    if (fileInput && fileInput.files) {
+      const dt = new DataTransfer();
+      for (let i = 0; i < fileInput.files.length; i++) {
+        if (i !== index) dt.items.add(fileInput.files[i]);
+      }
+      fileInput.files = dt.files;
+    }
+  }
+}
+
+// ============================================
+// UPLOAD FUNCTIONS - FIXED
+// ============================================
+async function uploadToCloudinary(file) {
+  if (!cloudinaryConfig.cloudName || cloudinaryConfig.cloudName === "YOUR_CLOUD_NAME" ||
+      !cloudinaryConfig.uploadPreset || cloudinaryConfig.uploadPreset === "YOUR_UPLOAD_PRESET") {
+    throw new Error("Cloudinary is not configured yet — add your real cloudName and uploadPreset in config.js");
+  }
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', cloudinaryConfig.uploadPreset);
+
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`, {
+    method: 'POST',
+    body: formData
+  });
+
+  if (!response.ok) {
+    let message = `Cloudinary upload failed (HTTP ${response.status})`;
+    try {
+      const errData = await response.json();
+      if (errData && errData.error && errData.error.message) message = errData.error.message;
+    } catch (_) { /* ignore parse errors */ }
+    throw new Error(message);
+  }
+
+  const data = await response.json();
+  return data.secure_url;
+}
+
+async function uploadImages(files) {
+  const urls = [];
+  const errors = [];
+  if (!files || files.length === 0) {
+    return { urls, errors };
+  }
+
+  console.log(`📷 Uploading ${files.length} images...`);
+  
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    try {
+      console.log(`📤 Uploading: ${file.name} (${file.size} bytes)`);
+      const url = await uploadToCloudinary(file);
+      urls.push(url);
+      console.log(`✅ URL: ${url}`);
+    } catch (error) {
+      // Log the real error instead of hiding it behind a placeholder image,
+      // so the actual cause shows up in the admin panel
+      console.error(`❌ Upload error for ${file.name}:`, error);
+      errors.push({ file: file.name, code: error.code || '', message: error.message || String(error) });
+    }
+  }
+  
+  console.log(`✅ Total uploaded: ${urls.length} / ${files.length} images`);
+  return { urls, errors };
+}
+
+async function uploadSlideImage(file) {
+  // Throw the real error instead of returning null, so the actual cause shows in the on-screen message
+  console.log(`📤 Uploading slide: ${file.name}`);
+  const url = await uploadToCloudinary(file);
+  console.log("✅ Slide image uploaded:", url);
+  return url;
 }
 
 // ============================================
@@ -54,23 +166,21 @@ function showMessage(id, text, isSuccess = true) {
 document.addEventListener("DOMContentLoaded", function() {
   console.log("✅ DOM loaded");
   
-  // Menu navigation
-  const menuButtons = document.querySelectorAll(".menu-btn");
-  const panels = document.querySelectorAll(".admin-panel");
-
-  menuButtons.forEach(btn => {
+  // Menu
+  document.querySelectorAll(".menu-btn").forEach(btn => {
     btn.addEventListener("click", function() {
-      menuButtons.forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".menu-btn").forEach(b => b.classList.remove("active"));
       this.classList.add("active");
-
-      panels.forEach(panel => panel.classList.remove("active"));
-
+      document.querySelectorAll(".admin-panel").forEach(p => p.classList.remove("active"));
       const target = byId(this.dataset.target);
       if (target) target.classList.add("active");
     });
   });
 
-  // Load all data
+  // Drop Zones
+  setupDropZone('productDropZone', 'productImages', 'productImagePreview', true);
+  setupDropZone('slideDropZone', 'slideImageFile', 'slideImagePreview', false);
+
   loadDesignInputs();
   loadIntegrationSettings();
   loadProductsAdmin();
@@ -81,533 +191,282 @@ document.addEventListener("DOMContentLoaded", function() {
   loadShippingAdmin();
   loadCommentsAdmin();
   loadMonthlyProfits();
-
-  // Setup event listeners
   setupEventListeners();
 });
 
 // ============================================
-// DESIGN FUNCTIONS
+// DESIGN
 // ============================================
 function loadDesignInputs() {
-  try {
-    const saved = loadStoreSettings();
-    console.log("📝 Loading design settings:", saved);
-
-    const fields = [
-      ["storeNameInput", saved.storeName],
-      ["nicknameInput", saved.nickname],
-      ["brandIdentityInput", saved.brandIdentity],
-      ["primaryColorInput", saved.primaryColor],
-      ["secondaryColorInput", saved.secondaryColor],
-      ["accentColorInput", saved.accentColor],
-      ["logoUrlInput", saved.logoUrl],
-      ["footerTextInput", saved.footerText]
-    ];
-
-    fields.forEach(([id, value]) => {
-      const el = byId(id);
-      if (el) {
-        el.value = value || "";
-        console.log(`✅ Loaded ${id}:`, value);
-      }
-    });
-  } catch (error) {
-    console.error("❌ Error loading design:", error);
-  }
+  const saved = loadStoreSettings();
+  const fields = [
+    ["storeNameInput", saved.storeName],
+    ["nicknameInput", saved.nickname],
+    ["brandIdentityInput", saved.brandIdentity],
+    ["primaryColorInput", saved.primaryColor],
+    ["secondaryColorInput", saved.secondaryColor],
+    ["accentColorInput", saved.accentColor],
+    ["textColorInput", saved.textColor],
+    ["logoUrlInput", saved.logoUrl],
+    ["footerTextInput", saved.footerText],
+    ["cardStyleInput", saved.cardStyle]
+  ];
+  fields.forEach(([id, value]) => { const el = byId(id); if (el) el.value = value || ""; });
 }
 
 // ============================================
-// PRODUCT FUNCTIONS
+// PRODUCTS
 // ============================================
-async function uploadImages(files) {
-  const urls = [];
-  if (!files || files.length === 0) {
-    console.log("📷 No images to upload");
-    return urls;
-  }
-
-  console.log(`📷 Uploading ${files.length} images...`);
-  
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
-    try {
-      const fileName = `products/${Date.now()}_${i}_${file.name}`;
-      const fileRef = storage.ref(fileName);
-      
-      console.log(`📤 Uploading: ${file.name}`);
-      const snapshot = await fileRef.put(file);
-      const url = await snapshot.ref.getDownloadURL();
-      urls.push(url);
-      console.log(`✅ Uploaded image ${i+1}:`, url);
-    } catch (error) {
-      console.error(`❌ Upload error for ${file.name}:`, error);
-    }
-  }
-  
-  return urls;
-}
-
-// Upload slide image
-async function uploadSlideImage(file) {
-  try {
-    const fileName = `slides/${Date.now()}_${file.name}`;
-    const fileRef = storage.ref(fileName);
-    const snapshot = await fileRef.put(file);
-    const url = await snapshot.ref.getDownloadURL();
-    return url;
-  } catch (error) {
-    console.error("❌ Slide upload error:", error);
-    return null;
-  }
-}
-
 async function loadProductsAdmin() {
   const list = byId("productsAdminList");
   if (!list) return;
-
   try {
-    console.log("📦 Loading products...");
     const snap = await db.collection("products").orderBy("createdAt", "desc").get();
     const products = [];
     snap.forEach(doc => products.push({ id: doc.id, ...doc.data() }));
-    console.log(`✅ Loaded ${products.length} products`);
-
-    if (!products.length) {
-      list.innerHTML = "<p class='small-note'>No products yet</p>";
-      return;
-    }
-
-    list.innerHTML = products.map(item => `
+    if (!products.length) { list.innerHTML = "<p class='small-note'>No products yet</p>"; return; }
+    list.innerHTML = products.map(p => `
       <div class="card">
-        <img src="${item.images && item.images.length > 0 ? item.images[0] : 'assets/images/placeholder.jpg'}" alt="${item.name || 'Product'}" style="width:100%;height:180px;object-fit:cover;border-radius:12px;" />
-        <h3>${item.name || "Unnamed"}</h3>
-        <p style="color:#666;">${item.category || "No category"}</p>
-        <p><strong>${item.afterDiscount || item.price || 0} DZD</strong></p>
-        <button onclick="deleteProduct('${item.id}')" style="background:#dc3545;margin-top:10px;padding:8px 16px;">🗑️ Delete</button>
+        <img src="${p.images && p.images.length > 0 ? p.images[0] : 'assets/images/placeholder.jpg'}" style="width:100%;height:180px;object-fit:cover;border-radius:12px;" />
+        <h3>${p.name}</h3>
+        <p>${p.category || "No category"}</p>
+        <p><strong>${p.afterDiscount || p.price || 0} DZD</strong></p>
+        <button onclick="deleteProduct('${p.id}')" style="background:#dc3545;padding:8px 16px;border:none;border-radius:8px;color:white;cursor:pointer;">Delete</button>
       </div>
     `).join("");
-  } catch (error) {
-    console.error("❌ Error loading products:", error);
-    list.innerHTML = "<p class='small-note'>Error loading products: " + error.message + "</p>";
-  }
+  } catch (error) { console.error("Error loading products:", error); }
 }
 
 async function deleteProduct(id) {
   if (!confirm("Delete this product?")) return;
-  try {
-    await db.collection("products").doc(id).delete();
-    showMessage("productMessage", "✅ Product deleted successfully!");
-    loadProductsAdmin();
-  } catch (error) {
-    showMessage("productMessage", "❌ Error deleting product: " + error.message, false);
-    console.error("❌ Delete error:", error);
-  }
+  await db.collection("products").doc(id).delete();
+  loadProductsAdmin();
 }
 
 // ============================================
-// CATEGORY FUNCTIONS
+// CATEGORIES
 // ============================================
 async function loadCategoriesAdmin() {
   const list = byId("categoriesAdminList");
   if (!list) return;
-
   try {
-    console.log("📂 Loading categories...");
     const snap = await db.collection("categories").orderBy("createdAt", "desc").get();
     const items = [];
     snap.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
-    console.log(`✅ Loaded ${items.length} categories`);
-
-    // Also update category dropdown in product form
-    const categorySelect = byId("productCategory");
-    if (categorySelect) {
-      const currentValue = categorySelect.value;
-      categorySelect.innerHTML = '<option value="">Select category</option>';
-      items.forEach(cat => {
-        const option = document.createElement('option');
-        option.value = cat.name;
-        option.textContent = cat.name;
-        categorySelect.appendChild(option);
-      });
-      if (currentValue) categorySelect.value = currentValue;
+    const select = byId("productCategory");
+    if (select) {
+      const current = select.value;
+      select.innerHTML = '<option value="">Select category</option>';
+      items.forEach(c => { const opt = document.createElement('option'); opt.value = c.name; opt.textContent = c.name; select.appendChild(opt); });
+      if (current) select.value = current;
     }
-
-    if (!items.length) {
-      list.innerHTML = "<p class='small-note'>No categories yet</p>";
-      return;
-    }
-
-    list.innerHTML = items.map(cat => `
+    if (!items.length) { list.innerHTML = "<p class='small-note'>No categories yet</p>"; return; }
+    list.innerHTML = items.map(c => `
       <div class="card" style="display:flex;justify-content:space-between;align-items:center;">
-        <p><strong>${cat.name || "Unnamed"}</strong></p>
-        <button onclick="deleteCategory('${cat.id}')" style="background:#dc3545;padding:6px 12px;">🗑️</button>
+        <strong>${c.name}</strong>
+        <button onclick="deleteCategory('${c.id}')" style="background:#dc3545;padding:6px 12px;border:none;border-radius:8px;color:white;cursor:pointer;">Delete</button>
       </div>
     `).join("");
-  } catch (error) {
-    console.error("❌ Error loading categories:", error);
-    list.innerHTML = "<p class='small-note'>Error loading categories</p>";
-  }
+  } catch (error) { console.error("Error loading categories:", error); }
 }
 
 async function deleteCategory(id) {
   if (!confirm("Delete this category?")) return;
-  try {
-    await db.collection("categories").doc(id).delete();
-    showMessage("categoryMessage", "✅ Category deleted successfully!");
-    loadCategoriesAdmin();
-  } catch (error) {
-    showMessage("categoryMessage", "❌ Error deleting category", false);
-    console.error("❌ Delete error:", error);
-  }
+  await db.collection("categories").doc(id).delete();
+  loadCategoriesAdmin();
 }
 
 // ============================================
-// SLIDER FUNCTIONS - WITH IMAGE UPLOAD
+// SLIDER
 // ============================================
 async function loadSlidesAdmin() {
   const list = byId("slidesAdminList");
   if (!list) return;
-
   try {
-    console.log("🖼️ Loading slides...");
     const snap = await db.collection("slides").orderBy("createdAt", "desc").get();
     const items = [];
     snap.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
-    console.log(`✅ Loaded ${items.length} slides`);
-
-    if (!items.length) {
-      list.innerHTML = "<p class='small-note'>No slides yet</p>";
-      return;
-    }
-
-    list.innerHTML = items.map(slide => `
+    if (!items.length) { list.innerHTML = "<p class='small-note'>No slides yet</p>"; return; }
+    list.innerHTML = items.map(s => `
       <div class="card">
-        <img src="${slide.image || 'assets/images/placeholder.jpg'}" alt="${slide.title || ''}" style="width:100%;height:160px;object-fit:cover;border-radius:12px;" />
-        <h3>${slide.title || "Untitled"}</h3>
-        <p>${slide.text || ""}</p>
-        <button onclick="deleteSlide('${slide.id}')" style="background:#dc3545;margin-top:10px;">🗑️ Delete</button>
+        <img src="${s.image || 'assets/images/placeholder.jpg'}" style="width:100%;height:160px;object-fit:cover;border-radius:12px;" />
+        <h3>${s.title}</h3>
+        <p>${s.text}</p>
+        <button onclick="deleteSlide('${s.id}')" style="background:#dc3545;padding:8px 16px;border:none;border-radius:8px;color:white;cursor:pointer;">Delete</button>
       </div>
     `).join("");
-  } catch (error) {
-    console.error("❌ Error loading slides:", error);
-    list.innerHTML = "<p class='small-note'>Error loading slides</p>";
-  }
+  } catch (error) { console.error("Error loading slides:", error); }
 }
 
 async function deleteSlide(id) {
   if (!confirm("Delete this slide?")) return;
-  try {
-    await db.collection("slides").doc(id).delete();
-    showMessage("slideMessage", "✅ Slide deleted successfully!");
-    loadSlidesAdmin();
-  } catch (error) {
-    showMessage("slideMessage", "❌ Error deleting slide", false);
-    console.error("❌ Delete error:", error);
-  }
+  await db.collection("slides").doc(id).delete();
+  loadSlidesAdmin();
 }
 
 // ============================================
-// ORDER FUNCTIONS WITH MONTHLY PROFITS
+// ORDERS
 // ============================================
 async function loadOrdersAdmin() {
   const list = byId("ordersAdminList");
   if (!list) return;
-
   try {
-    console.log("📋 Loading orders...");
     const snap = await db.collection("orders").orderBy("createdAt", "desc").get();
     const items = [];
     snap.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
-    console.log(`✅ Loaded ${items.length} orders`);
-
-    if (!items.length) {
-      list.innerHTML = "<p class='small-note'>No orders yet</p>";
-      return;
-    }
-
-    list.innerHTML = items.map(order => {
-      const statusColors = {
-        pending: "#ffc107",
-        done: "#28a745",
-        rejected: "#dc3545",
-        returned: "#fd7e14"
-      };
-      return `
+    if (!items.length) { list.innerHTML = "<p class='small-note'>No orders yet</p>"; return; }
+    const colors = { pending: "#ffc107", done: "#28a745", rejected: "#dc3545", returned: "#fd7e14" };
+    list.innerHTML = items.map(o => `
       <div class="card">
-        <h3>👤 ${order.fullName || "Anonymous"}</h3>
-        <p><strong>Product:</strong> ${order.productName || "-"}</p>
-        <p><strong>Phone:</strong> ${order.phone || "-"}</p>
-        <p><strong>State:</strong> ${order.state || "-"}</p>
-        <p><strong>Date:</strong> ${order.orderDate || formatDate(order.createdAt) || "-"}</p>
-        <p><strong>Status:</strong> <span style="color:${statusColors[order.status] || '#333'};font-weight:bold;">${order.status || "pending"}</span></p>
-        <p><strong>Transaction:</strong> ${order.transactionNumber || "-"}</p>
-        <p><strong>Total:</strong> ${order.total || 0} DZD</p>
-        <select onchange="updateOrderStatus('${order.id}', this.value)" style="margin-top:10px;width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;">
-          <option value="pending" ${order.status === "pending" ? "selected" : ""}>⏳ Pending</option>
-          <option value="done" ${order.status === "done" ? "selected" : ""}>✅ Done</option>
-          <option value="rejected" ${order.status === "rejected" ? "selected" : ""}>❌ Rejected</option>
-          <option value="returned" ${order.status === "returned" ? "selected" : ""}>🔄 Returned</option>
+        <h3>${o.fullName}</h3>
+        <p><strong>Product:</strong> ${o.productName}</p>
+        <p><strong>Phone:</strong> ${o.phone}</p>
+        <p><strong>Date:</strong> ${o.orderDate || formatDate(o.createdAt)}</p>
+        <p><strong>Status:</strong> <span style="color:${colors[o.status] || '#333'}">${o.status}</span></p>
+        <p><strong>Total:</strong> ${o.total} DZD</p>
+        <select onchange="updateOrderStatus('${o.id}', this.value)" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-top:10px;">
+          <option value="pending" ${o.status === "pending" ? "selected" : ""}>Pending</option>
+          <option value="done" ${o.status === "done" ? "selected" : ""}>Done</option>
+          <option value="rejected" ${o.status === "rejected" ? "selected" : ""}>Rejected</option>
+          <option value="returned" ${o.status === "returned" ? "selected" : ""}>Returned</option>
         </select>
       </div>
-    `}).join("");
-
-    // Load monthly profits
+    `).join("");
     loadMonthlyProfits();
-
-  } catch (error) {
-    console.error("❌ Error loading orders:", error);
-    list.innerHTML = "<p class='small-note'>Error loading orders</p>";
-  }
+  } catch (error) { console.error("Error loading orders:", error); }
 }
 
 async function updateOrderStatus(id, status) {
-  try {
-    await db.collection("orders").doc(id).update({ status });
-    showMessage("orderMessage", "✅ Order status updated!");
-    loadOrdersAdmin();
-  } catch (error) {
-    console.error("❌ Update error:", error);
-  }
+  await db.collection("orders").doc(id).update({ status });
+  loadOrdersAdmin();
 }
 
 // ============================================
-// MONTHLY PROFITS
+// PROFITS
 // ============================================
 async function loadMonthlyProfits() {
   const container = byId("monthlyProfits");
   if (!container) return;
-
   try {
-    console.log("💰 Loading monthly profits...");
     const snap = await db.collection("orders").get();
     const orders = [];
     snap.forEach(doc => orders.push({ id: doc.id, ...doc.data() }));
-
-    // Filter only done orders
-    const doneOrders = orders.filter(order => order.status === "done");
-    
-    // Group by month
-    const monthlyData = {};
-    doneOrders.forEach(order => {
-      const date = new Date(order.createdAt);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const monthName = getMonthName(date.getMonth());
-      const year = date.getFullYear();
-      
-      if (!monthlyData[monthKey]) {
-        monthlyData[monthKey] = {
-          month: monthName,
-          year: year,
-          total: 0,
-          orders: 0
-        };
-      }
-      monthlyData[monthKey].total += Number(order.total || 0);
-      monthlyData[monthKey].orders += 1;
+    const done = orders.filter(o => o.status === "done");
+    if (!done.length) { container.innerHTML = "<p class='small-note'>No completed orders yet</p>"; return; }
+    const monthly = {};
+    done.forEach(o => {
+      const d = new Date(o.createdAt);
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      if (!monthly[key]) monthly[key] = { month: getMonthName(d.getMonth()), year: d.getFullYear(), total: 0, orders: 0 };
+      monthly[key].total += Number(o.total || 0);
+      monthly[key].orders += 1;
     });
-
-    // Sort by month
-    const sortedMonths = Object.keys(monthlyData).sort();
-    
-    if (sortedMonths.length === 0) {
-      container.innerHTML = `
-        <div class="card" style="text-align:center;padding:40px;">
-          <p class="small-note">No completed orders yet</p>
+    const total = done.reduce((s, o) => s + Number(o.total || 0), 0);
+    let html = `<div class="card" style="background:linear-gradient(135deg,#e774b7,#d95a9e);color:white;text-align:center;padding:30px;border-radius:16px;">
+      <h2>💰 Total Profit</h2>
+      <h1 style="font-size:48px;">${total.toLocaleString()} DZD</h1>
+      <p>From ${done.length} completed orders</p>
+    </div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin-top:20px;">`;
+    Object.keys(monthly).sort().forEach(key => {
+      const d = monthly[key];
+      html += `<div class="card" style="text-align:center;padding:20px;border-left:4px solid #e774b7;">
+        <h3>${d.month} ${d.year}</h3>
+        <p style="font-size:24px;font-weight:bold;color:#e774b7;">${d.total.toLocaleString()} DZD</p>
+        <p class="small-note">${d.orders} orders</p>
+        <div style="width:100%;height:4px;background:#e9ecef;border-radius:2px;margin-top:10px;">
+          <div style="width:${Math.min((d.total/total)*100,100)}%;height:4px;background:#e774b7;border-radius:2px;"></div>
         </div>
-      `;
-      return;
-    }
-
-    // Calculate total profit
-    const totalProfit = doneOrders.reduce((sum, order) => sum + Number(order.total || 0), 0);
-
-    let html = `
-      <div class="profits-summary">
-        <div class="card" style="background:linear-gradient(135deg,#28a745,#20c997);color:white;text-align:center;padding:30px;margin-bottom:20px;">
-          <h2>💰 Total Profit</h2>
-          <h1 style="font-size:48px;">${totalProfit.toLocaleString()} DZD</h1>
-          <p>From ${doneOrders.length} completed orders</p>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;">
-    `;
-
-    sortedMonths.forEach(monthKey => {
-      const data = monthlyData[monthKey];
-      const profitClass = data.total > 0 ? 'profit-positive' : 'profit-neutral';
-      html += `
-        <div class="card ${profitClass}" style="text-align:center;padding:20px;border-left:4px solid ${data.total > 0 ? '#28a745' : '#ffc107'};">
-          <h3>${data.month} ${data.year}</h3>
-          <p style="font-size:24px;font-weight:bold;color:${data.total > 0 ? '#28a745' : '#ffc107'};">${data.total.toLocaleString()} DZD</p>
-          <p class="small-note">${data.orders} orders</p>
-          <div style="width:100%;height:4px;background:#e9ecef;border-radius:2px;margin-top:10px;">
-            <div style="width:${Math.min((data.total / totalProfit) * 100, 100)}%;height:4px;background:${data.total > 0 ? '#28a745' : '#ffc107'};border-radius:2px;"></div>
-          </div>
-        </div>
-      `;
+      </div>`;
     });
-
-    html += `
-        </div>
-      </div>
-    `;
-
-    container.innerHTML = html;
-
-  } catch (error) {
-    console.error("❌ Error loading profits:", error);
-    container.innerHTML = "<p class='small-note'>Error loading profits</p>";
-  }
+    container.innerHTML = html + "</div>";
+  } catch (error) { console.error("Error loading profits:", error); }
 }
 
 // ============================================
-// COUPON FUNCTIONS
+// COUPONS
 // ============================================
 async function loadCouponsAdmin() {
   const list = byId("couponsAdminList");
   if (!list) return;
-
   try {
-    console.log("🏷️ Loading coupons...");
-    const snap = await db.collection("coupons").orderBy("createdAt", "desc").get();
+    const snap = await db.collection("coupons").get();
     const items = [];
     snap.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
-    console.log(`✅ Loaded ${items.length} coupons`);
-
-    if (!items.length) {
-      list.innerHTML = "<p class='small-note'>No coupons yet</p>";
-      return;
-    }
-
-    list.innerHTML = items.map(coupon => `
+    if (!items.length) { list.innerHTML = "<p class='small-note'>No coupons yet</p>"; return; }
+    list.innerHTML = items.map(c => `
       <div class="card" style="display:flex;justify-content:space-between;align-items:center;">
-        <div>
-          <h3>🏷️ ${coupon.code || ""}</h3>
-          <p>Discount: ${coupon.value || 0} DZD</p>
-        </div>
-        <button onclick="deleteCoupon('${coupon.id}')" style="background:#dc3545;">🗑️</button>
+        <div><strong>${c.code}</strong> - ${c.value} DZD</div>
+        <button onclick="deleteCoupon('${c.id}')" style="background:#dc3545;padding:6px 12px;border:none;border-radius:8px;color:white;cursor:pointer;">Delete</button>
       </div>
     `).join("");
-  } catch (error) {
-    console.error("❌ Error loading coupons:", error);
-    list.innerHTML = "<p class='small-note'>Error loading coupons</p>";
-  }
+  } catch (error) { console.error("Error loading coupons:", error); }
 }
 
 async function deleteCoupon(id) {
   if (!confirm("Delete this coupon?")) return;
-  try {
-    await db.collection("coupons").doc(id).delete();
-    showMessage("couponMessage", "✅ Coupon deleted successfully!");
-    loadCouponsAdmin();
-  } catch (error) {
-    showMessage("couponMessage", "❌ Error deleting coupon", false);
-    console.error("❌ Delete error:", error);
-  }
+  await db.collection("coupons").doc(id).delete();
+  loadCouponsAdmin();
 }
 
 // ============================================
-// SHIPPING FUNCTIONS
+// SHIPPING
 // ============================================
 async function loadShippingAdmin() {
   const list = byId("shippingAdminList");
   if (!list) return;
-
   try {
-    console.log("🚚 Loading shipping rules...");
-    const snap = await db.collection("shipping").orderBy("createdAt", "desc").get();
+    const snap = await db.collection("shipping").get();
     const items = [];
     snap.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
-    console.log(`✅ Loaded ${items.length} shipping rules`);
-
-    if (!items.length) {
-      list.innerHTML = "<p class='small-note'>No shipping rules yet</p>";
-      return;
-    }
-
-    list.innerHTML = items.map(item => `
+    if (!items.length) { list.innerHTML = "<p class='small-note'>No shipping rules yet</p>"; return; }
+    list.innerHTML = items.map(s => `
       <div class="card" style="display:flex;justify-content:space-between;align-items:center;">
-        <div>
-          <h3>📍 ${item.state || ""}</h3>
-          <p>Price: ${item.free ? "🆓 Free" : (item.price + " DZD")}</p>
-        </div>
-        <button onclick="deleteShipping('${item.id}')" style="background:#dc3545;">🗑️</button>
+        <div><strong>${s.state}</strong> - ${s.free ? "Free" : s.price + " DZD"}</div>
+        <button onclick="deleteShipping('${s.id}')" style="background:#dc3545;padding:6px 12px;border:none;border-radius:8px;color:white;cursor:pointer;">Delete</button>
       </div>
     `).join("");
-  } catch (error) {
-    console.error("❌ Error loading shipping:", error);
-    list.innerHTML = "<p class='small-note'>Error loading shipping</p>";
-  }
+  } catch (error) { console.error("Error loading shipping:", error); }
 }
 
 async function deleteShipping(id) {
   if (!confirm("Delete this shipping rule?")) return;
-  try {
-    await db.collection("shipping").doc(id).delete();
-    showMessage("shippingMessage", "✅ Shipping rule deleted!");
-    loadShippingAdmin();
-  } catch (error) {
-    showMessage("shippingMessage", "❌ Error deleting shipping rule", false);
-    console.error("❌ Delete error:", error);
-  }
+  await db.collection("shipping").doc(id).delete();
+  loadShippingAdmin();
 }
 
 // ============================================
-// COMMENT FUNCTIONS
+// COMMENTS
 // ============================================
 async function loadCommentsAdmin() {
   const list = byId("commentsAdminList");
   if (!list) return;
-
   try {
-    console.log("💬 Loading comments...");
     const snap = await db.collection("comments").orderBy("createdAt", "desc").get();
     const items = [];
     snap.forEach(doc => items.push({ id: doc.id, ...doc.data() }));
-    console.log(`✅ Loaded ${items.length} comments`);
-
-    if (!items.length) {
-      list.innerHTML = "<p class='small-note'>No comments yet</p>";
-      return;
-    }
-
-    list.innerHTML = items.map(comment => `
+    if (!items.length) { list.innerHTML = "<p class='small-note'>No comments yet</p>"; return; }
+    list.innerHTML = items.map(c => `
       <div class="card" style="display:flex;justify-content:space-between;align-items:center;">
-        <div>
-          <h3>👤 ${comment.name || "Anonymous"}</h3>
-          <p>${comment.text || ""}</p>
-          <p class="small-note">Product: ${comment.productId || "-"}</p>
-        </div>
-        <button onclick="deleteComment('${comment.id}')" style="background:#dc3545;">🗑️</button>
+        <div><strong>${c.name}</strong><br />${c.text}<br /><small>${c.rating || 0}★</small></div>
+        <button onclick="deleteComment('${c.id}')" style="background:#dc3545;padding:6px 12px;border:none;border-radius:8px;color:white;cursor:pointer;">Delete</button>
       </div>
     `).join("");
-  } catch (error) {
-    console.error("❌ Error loading comments:", error);
-    list.innerHTML = "<p class='small-note'>Error loading comments</p>";
-  }
+  } catch (error) { console.error("Error loading comments:", error); }
 }
 
 async function deleteComment(id) {
   if (!confirm("Delete this comment?")) return;
-  try {
-    await db.collection("comments").doc(id).delete();
-    loadCommentsAdmin();
-  } catch (error) {
-    console.error("❌ Delete error:", error);
-  }
+  await db.collection("comments").doc(id).delete();
+  loadCommentsAdmin();
 }
 
 // ============================================
-// INTEGRATION SETTINGS
+// SETTINGS
 // ============================================
 function loadIntegrationSettings() {
-  const firebaseBox = byId("firebaseConfigBox");
-  const emailjsBox = byId("emailjsConfigBox");
-  const sheetsBox = byId("googleSheetsBox");
-
-  if (firebaseBox) firebaseBox.value = localStorage.getItem("firebaseConfigBox") || "";
-  if (emailjsBox) emailjsBox.value = localStorage.getItem("emailjsConfigBox") || "";
-  if (sheetsBox) sheetsBox.value = localStorage.getItem("googleSheetsBox") || "";
+  byId("firebaseConfigBox").value = localStorage.getItem("firebaseConfigBox") || "";
+  byId("emailjsConfigBox").value = localStorage.getItem("emailjsConfigBox") || "";
+  byId("googleSheetsBox").value = localStorage.getItem("googleSheetsBox") || "";
 }
 
 // ============================================
@@ -616,48 +475,46 @@ function loadIntegrationSettings() {
 function setupEventListeners() {
   console.log("🔧 Setting up event listeners...");
 
-  // Save Design
-  const saveDesignBtn = byId("saveDesignBtn");
-  if (saveDesignBtn) {
-    saveDesignBtn.addEventListener("click", function() {
-      try {
-        const newSettings = {
-          storeName: safeValue("storeNameInput"),
-          nickname: safeValue("nicknameInput"),
-          brandIdentity: safeValue("brandIdentityInput"),
-          currency: "DZD",
-          primaryColor: safeValue("primaryColorInput", "#111111"),
-          secondaryColor: safeValue("secondaryColorInput", "#ffffff"),
-          accentColor: safeValue("accentColorInput", "#ff6b00"),
-          logoUrl: safeValue("logoUrlInput"),
-          footerText: safeValue("footerTextInput")
-        };
+  // ===== DESIGN =====
+  byId("saveDesignBtn").addEventListener("click", function() {
+    const settings = {
+      storeName: safeValue("storeNameInput"),
+      nickname: safeValue("nicknameInput"),
+      brandIdentity: safeValue("brandIdentityInput"),
+      primaryColor: safeValue("primaryColorInput", "#e774b7"),
+      secondaryColor: safeValue("secondaryColorInput", "#fce4f4"),
+      accentColor: safeValue("accentColorInput", "#e774b7"),
+      textColor: safeValue("textColorInput", "#1a1a2e"),
+      logoUrl: safeValue("logoUrlInput"),
+      footerText: safeValue("footerTextInput"),
+      cardStyle: safeValue("cardStyleInput", "classic"),
+      currency: "DZD"
+    };
+    saveStoreSettings(settings);
+    showMessage("designMessage", "✅ Design saved!");
+  });
 
-        saveStoreSettings(newSettings);
-        showMessage("designMessage", "✅ Design saved successfully!");
-        console.log("✅ Design saved:", newSettings);
-      } catch (error) {
-        showMessage("designMessage", "❌ Error saving design: " + error.message, false);
-        console.error("❌ Design save error:", error);
-      }
-    });
-  }
-
-  // Save Product
+  // ==========================================
+  // SAVE PRODUCT - FIXED
+  // ==========================================
   const productForm = byId("productForm");
   if (productForm) {
     productForm.addEventListener("submit", async function(e) {
       e.preventDefault();
       
-      showMessage("productMessage", "⏳ Saving product...", true);
+      const submitBtn = this.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = "⏳ Saving...";
       
+      showMessage("productMessage", "⏳ Processing...", true);
+
       try {
+        // Get form values
         const name = safeValue("productName").trim();
         const description = safeValue("productDescription").trim();
         const price = Number(safeValue("productPrice", 0));
         const beforeDiscount = Number(safeValue("productBeforeDiscount", 0));
         const afterDiscount = Number(safeValue("productAfterDiscount", 0));
-        const discountPercent = Number(safeValue("productDiscountPercent", 0));
         const mode = safeValue("productMode", "buy");
         const stock = Number(safeValue("productStock", 0));
         const sizes = safeValue("productSizes");
@@ -665,34 +522,59 @@ function setupEventListeners() {
         const category = safeValue("productCategory");
         const isBestSeller = safeChecked("isBestSeller");
         const isSpecialOffer = safeChecked("isSpecialOffer");
-        
+
+        // Validate
         if (!name) {
           showMessage("productMessage", "❌ Product name is required!", false);
+          submitBtn.disabled = false;
+          submitBtn.textContent = "💾 Save Product";
           return;
         }
         if (!description) {
-          showMessage("productMessage", "❌ Product description is required!", false);
+          showMessage("productMessage", "❌ Description is required!", false);
+          submitBtn.disabled = false;
+          submitBtn.textContent = "💾 Save Product";
           return;
         }
         if (!price || price <= 0) {
           showMessage("productMessage", "❌ Valid price is required!", false);
+          submitBtn.disabled = false;
+          submitBtn.textContent = "💾 Save Product";
           return;
         }
 
-        console.log("📦 Form data:", { name, description, price, mode, category });
-
-        const filesInput = byId("productImages");
-        const files = filesInput ? filesInput.files : [];
-        let imageUrls = [];
+        // Get images
+        const fileInput = byId("productImages");
+        const files = fileInput ? fileInput.files : [];
         
-        if (files && files.length > 0) {
-          imageUrls = await uploadImages(files);
-          console.log("✅ Images uploaded:", imageUrls);
-        } else {
-          console.log("📷 No images selected, using placeholder");
-          imageUrls = ["assets/images/placeholder.jpg"];
+        if (!files || files.length === 0) {
+          showMessage("productMessage", "❌ Please upload at least one image!", false);
+          submitBtn.disabled = false;
+          submitBtn.textContent = "💾 Save Product";
+          return;
         }
 
+        // Upload images
+        showMessage("productMessage", "⏳ Uploading images...", true);
+        const uploadResult = await uploadImages(files);
+        const imageUrls = uploadResult.urls;
+        console.log("📷 Image URLs:", imageUrls, "Errors:", uploadResult.errors);
+        
+        if (!imageUrls || imageUrls.length === 0) {
+          const firstError = uploadResult.errors[0];
+          const reason = firstError ? `${firstError.code || ''} ${firstError.message}`.trim() : "unknown error";
+          showMessage("productMessage", `❌ Failed to upload images (${reason}). Check your Cloudinary cloudName/uploadPreset in config.js.`, false);
+          submitBtn.disabled = false;
+          submitBtn.textContent = "💾 Save Product";
+          return;
+        }
+        if (uploadResult.errors.length > 0) {
+          console.warn(`⚠️ ${uploadResult.errors.length} of ${files.length} images failed to upload:`, uploadResult.errors);
+        }
+
+        // Save product
+        showMessage("productMessage", "⏳ Saving to database...", true);
+        
         const productData = {
           name: name,
           description: description,
@@ -700,7 +582,6 @@ function setupEventListeners() {
           price: price,
           beforeDiscount: beforeDiscount || 0,
           afterDiscount: afterDiscount || price,
-          discountPercent: discountPercent || 0,
           mode: mode,
           stock: stock || 0,
           sizes: sizes || "",
@@ -708,6 +589,8 @@ function setupEventListeners() {
           category: category || "",
           isBestSeller: isBestSeller,
           isSpecialOffer: isSpecialOffer,
+          averageRating: 0,
+          reviewCount: 0,
           createdAt: new Date().toISOString()
         };
 
@@ -715,184 +598,130 @@ function setupEventListeners() {
         
         const docRef = await db.collection("products").add(productData);
         console.log("✅ Product saved with ID:", docRef.id);
+
+        showMessage("productMessage", "✅ Product saved successfully!", true);
         
-        showMessage("productMessage", "✅ Product saved successfully!");
-        productForm.reset();
-        if (filesInput) filesInput.value = "";
+        // Reset form
+        this.reset();
+        byId("productImagePreview").innerHTML = "";
+        if (fileInput) fileInput.value = "";
+        
+        // Reload products
         loadProductsAdmin();
         
       } catch (error) {
         console.error("❌ Product save error:", error);
-        showMessage("productMessage", "❌ Error saving product: " + error.message, false);
+        showMessage("productMessage", "❌ Error: " + error.message, false);
       }
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = "💾 Save Product";
     });
   }
 
-  // Add Category
-  const addCategoryBtn = byId("addCategoryBtn");
-  if (addCategoryBtn) {
-    addCategoryBtn.addEventListener("click", async function() {
-      const name = safeValue("categoryName").trim();
-      if (!name) {
-        showMessage("categoryMessage", "❌ Enter category name", false);
-        return;
-      }
+  // ==========================================
+  // ADD CATEGORY
+  // ==========================================
+  byId("addCategoryBtn").addEventListener("click", async function() {
+    const name = safeValue("categoryName").trim();
+    if (!name) { showMessage("categoryMessage", "❌ Enter category name", false); return; }
+    await db.collection("categories").add({ name, createdAt: new Date().toISOString() });
+    byId("categoryName").value = "";
+    showMessage("categoryMessage", "✅ Category added!");
+    loadCategoriesAdmin();
+  });
 
-      try {
-        await db.collection("categories").add({
-          name,
-          createdAt: new Date().toISOString()
-        });
-        if (byId("categoryName")) byId("categoryName").value = "";
-        showMessage("categoryMessage", "✅ Category added successfully!");
-        loadCategoriesAdmin();
-      } catch (error) {
-        showMessage("categoryMessage", "❌ Error adding category: " + error.message, false);
-        console.error("❌ Category error:", error);
-      }
+  // ==========================================
+  // ADD SLIDE - FIXED
+  // ==========================================
+  byId("addSlideBtn").addEventListener("click", async function() {
+    const title = safeValue("slideTitle").trim();
+    const text = safeValue("slideText").trim();
+    const fileInput = byId("slideImageFile");
+    const file = fileInput ? fileInput.files[0] : null;
+
+    if (!title || !text) {
+      showMessage("slideMessage", "❌ Title and text are required!", false);
+      return;
+    }
+    if (!file) {
+      showMessage("slideMessage", "❌ Please upload an image!", false);
+      return;
+    }
+
+    const btn = this;
+    btn.disabled = true;
+    btn.textContent = "⏳ Saving...";
+
+    try {
+      const imageUrl = await uploadSlideImage(file);
+      await db.collection("slides").add({ 
+        title, 
+        text, 
+        image: imageUrl, 
+        createdAt: new Date().toISOString() 
+      });
+      byId("slideTitle").value = "";
+      byId("slideText").value = "";
+      if (fileInput) fileInput.value = "";
+      byId("slideImagePreview").innerHTML = "";
+      showMessage("slideMessage", "✅ Slide added!");
+      loadSlidesAdmin();
+    } catch (error) {
+      console.error("❌ Slide error:", error);
+      showMessage("slideMessage", "❌ Error: " + error.message, false);
+    }
+    btn.disabled = false;
+    btn.textContent = "➕ Add Slide";
+  });
+
+  // ==========================================
+  // ADD COUPON
+  // ==========================================
+  byId("addCouponBtn").addEventListener("click", async function() {
+    const code = safeValue("couponName").trim().toUpperCase();
+    const value = Number(safeValue("couponValue", 0));
+    if (!code || !value) { showMessage("couponMessage", "❌ Enter code and value", false); return; }
+    await db.collection("coupons").add({ code, value, createdAt: new Date().toISOString() });
+    byId("couponName").value = "";
+    byId("couponValue").value = "";
+    showMessage("couponMessage", "✅ Coupon added!");
+    loadCouponsAdmin();
+  });
+
+  // ==========================================
+  // SAVE SHIPPING
+  // ==========================================
+  byId("saveShippingBtn").addEventListener("click", async function() {
+    const state = safeValue("shippingState").trim();
+    const price = Number(safeValue("shippingPrice", 0));
+    if (!state) { showMessage("shippingMessage", "❌ Enter state name", false); return; }
+    await db.collection("shipping").add({ 
+      state, 
+      price, 
+      free: safeChecked("shippingFree"), 
+      createdAt: new Date().toISOString() 
     });
-  }
+    byId("shippingState").value = "";
+    byId("shippingPrice").value = "";
+    byId("shippingFree").checked = false;
+    showMessage("shippingMessage", "✅ Shipping rule added!");
+    loadShippingAdmin();
+  });
 
-  // Add Slide - WITH IMAGE UPLOAD
-  const addSlideBtn = byId("addSlideBtn");
-  if (addSlideBtn) {
-    addSlideBtn.addEventListener("click", async function() {
-      const title = safeValue("slideTitle").trim();
-      const text = safeValue("slideText").trim();
-      const imageFile = byId("slideImageFile").files[0];
-      const imageUrl = safeValue("slideImage").trim();
-
-      if (!title || !text) {
-        showMessage("slideMessage", "❌ Title and text are required!", false);
-        return;
-      }
-
-      if (!imageFile && !imageUrl) {
-        showMessage("slideMessage", "❌ Please select an image or provide a URL!", false);
-        return;
-      }
-
-      try {
-        let finalImageUrl = imageUrl;
-
-        // Upload image if file selected
-        if (imageFile) {
-          showMessage("slideMessage", "⏳ Uploading image...", true);
-          const uploadedUrl = await uploadSlideImage(imageFile);
-          if (uploadedUrl) {
-            finalImageUrl = uploadedUrl;
-            console.log("✅ Slide image uploaded:", finalImageUrl);
-          } else {
-            showMessage("slideMessage", "❌ Failed to upload image", false);
-            return;
-          }
-        }
-
-        await db.collection("slides").add({
-          title,
-          text,
-          image: finalImageUrl,
-          createdAt: new Date().toISOString()
-        });
-
-        if (byId("slideTitle")) byId("slideTitle").value = "";
-        if (byId("slideText")) byId("slideText").value = "";
-        if (byId("slideImage")) byId("slideImage").value = "";
-        if (byId("slideImageFile")) byId("slideImageFile").value = "";
-
-        showMessage("slideMessage", "✅ Slide added successfully!");
-        loadSlidesAdmin();
-      } catch (error) {
-        showMessage("slideMessage", "❌ Error adding slide: " + error.message, false);
-        console.error("❌ Slide error:", error);
-      }
-    });
-  }
-
-  // Add Coupon
-  const addCouponBtn = byId("addCouponBtn");
-  if (addCouponBtn) {
-    addCouponBtn.addEventListener("click", async function() {
-      const code = safeValue("couponName").trim();
-      const value = Number(safeValue("couponValue", 0));
-
-      if (!code || !value) {
-        showMessage("couponMessage", "❌ Enter coupon code and value", false);
-        return;
-      }
-
-      try {
-        await db.collection("coupons").add({
-          code: code.toUpperCase(),
-          value,
-          createdAt: new Date().toISOString()
-        });
-
-        if (byId("couponName")) byId("couponName").value = "";
-        if (byId("couponValue")) byId("couponValue").value = "";
-
-        showMessage("couponMessage", "✅ Coupon added successfully!");
-        loadCouponsAdmin();
-      } catch (error) {
-        showMessage("couponMessage", "❌ Error adding coupon: " + error.message, false);
-        console.error("❌ Coupon error:", error);
-      }
-    });
-  }
-
-  // Save Shipping
-  const saveShippingBtn = byId("saveShippingBtn");
-  if (saveShippingBtn) {
-    saveShippingBtn.addEventListener("click", async function() {
-      const state = safeValue("shippingState").trim();
-      const price = Number(safeValue("shippingPrice", 0));
-      const free = safeChecked("shippingFree");
-
-      if (!state) {
-        showMessage("shippingMessage", "❌ Enter state name", false);
-        return;
-      }
-
-      try {
-        await db.collection("shipping").add({
-          state,
-          price,
-          free,
-          createdAt: new Date().toISOString()
-        });
-
-        if (byId("shippingState")) byId("shippingState").value = "";
-        if (byId("shippingPrice")) byId("shippingPrice").value = "";
-        if (byId("shippingFree")) byId("shippingFree").checked = false;
-
-        showMessage("shippingMessage", "✅ Shipping rule added successfully!");
-        loadShippingAdmin();
-      } catch (error) {
-        showMessage("shippingMessage", "❌ Error adding shipping rule: " + error.message, false);
-        console.error("❌ Shipping error:", error);
-      }
-    });
-  }
-
-  // Save Integration Settings
-  const saveIntegrationBtn = byId("saveIntegrationBtn");
-  if (saveIntegrationBtn) {
-    saveIntegrationBtn.addEventListener("click", function() {
-      try {
-        localStorage.setItem("firebaseConfigBox", safeValue("firebaseConfigBox"));
-        localStorage.setItem("emailjsConfigBox", safeValue("emailjsConfigBox"));
-        localStorage.setItem("googleSheetsBox", safeValue("googleSheetsBox"));
-        showMessage("settingsMessage", "✅ Integration settings saved!");
-      } catch (error) {
-        showMessage("settingsMessage", "❌ Error saving settings: " + error.message, false);
-        console.error("❌ Settings error:", error);
-      }
-    });
-  }
+  // ==========================================
+  // INTEGRATION SETTINGS
+  // ==========================================
+  byId("saveIntegrationBtn").addEventListener("click", function() {
+    localStorage.setItem("firebaseConfigBox", safeValue("firebaseConfigBox"));
+    localStorage.setItem("emailjsConfigBox", safeValue("emailjsConfigBox"));
+    localStorage.setItem("googleSheetsBox", safeValue("googleSheetsBox"));
+    showMessage("settingsMessage", "✅ Settings saved!");
+  });
 }
 
 // ============================================
-// EXPOSE FUNCTIONS FOR INLINE ONCLICK
+// EXPOSE
 // ============================================
 window.deleteProduct = deleteProduct;
 window.deleteCategory = deleteCategory;
@@ -901,8 +730,6 @@ window.updateOrderStatus = updateOrderStatus;
 window.deleteCoupon = deleteCoupon;
 window.deleteShipping = deleteShipping;
 window.deleteComment = deleteComment;
-window.showMessage = showMessage;
-window.formatDate = formatDate;
-window.getMonthName = getMonthName;
+window.removePreview = removePreview;
 
 console.log("✅ Admin.js ready!");
