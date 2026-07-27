@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Store</title>
+  <link rel="stylesheet" href="style.css" />
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+</head>
+<body>
+  <header class="header">
+    <div class="container header-inner">
+      <div class="brand">
+        <img id="brandLogo" src="assets/images/logo.png" alt="logo" />
+        <div>
+          <h1 id="brandName">My Store</h1>
+          <p id="brandNick">best shop online</p>
+        </div>
+      </div>
+
+      <div class="search-wrap">
+        <input id="searchInput" class="search-box" type="search" placeholder="Search products..." />
+      </div>
+
+      <div class="header-right">
+        <a href="admin.html"><button>Admin</button></a>
+      </div>
+    </div>
+  </header>
+
+  <section class="container hero-slider">
+    <div class="slider-track" id="sliderTrack"></div>
+    <div class="slider-nav">
+      <button id="prevSlide">‹</button>
+      <button id="nextSlide">›</button>
+    </div>
+  </section>
+
+  <section class="container section">
+    <h2 class="section-title">Categories</h2>
+    <div class="categories-grid" id="categoriesGrid"></div>
+  </section>
+
+  <section class="container section">
+    <h2 class="section-title">Special Offers</h2>
+    <div class="products-grid" id="specialOffersGrid"></div>
+  </section>
+
+  <section class="container section">
+    <h2 class="section-title">Best Sellers</h2>
+    <div class="products-grid" id="bestSellersGrid"></div>
+  </section>
+
+  <section class="container section">
+    <h2 class="section-title">All Products</h2>
+    <div class="products-grid" id="productsGrid"></div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <h3 id="footerStoreName">My Store</h3>
+      <div class="footer-links">
+        <a href="#">About</a>
+        <a href="#">Privacy Policy</a>
+        <a href="#">Shipping & Returns</a>
+        <a href="#">Contact</a>
+      </div>
+      <p id="footerText">© 2026 My Store - All rights reserved</p>
+    </div>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

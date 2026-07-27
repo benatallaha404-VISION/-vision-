@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checkout</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+</head>
+<body>
+  <div class="container checkout-wrap">
+    <a href="index.html">← Back</a>
+    <h1>Checkout</h1>
+
+    <div id="checkoutProductInfo"></div>
+
+    <form id="checkoutForm">
+      <input type="text" id="fullName" placeholder="Full name" required />
+      <input type="tel" id="phone" placeholder="Phone number" required />
+      <input type="email" id="email" placeholder="Email (optional)" />
+
+      <select id="orderType" required>
+        <option value="buy">Buy</option>
+        <option value="rent">Rent</option>
+      </select>
+
+      <select id="state" required>
+        <option value="">Select state</option>
+      </select>
+
+      <select id="deliveryMethod" required>
+        <option value="home">Home delivery</option>
+        <option value="shipping">Shipping company</option>
+      </select>
+
+      <input type="text" id="address" placeholder="Home address" required />
+      <textarea id="note" placeholder="Additional note"></textarea>
+
+      <select id="paymentMethod" required>
+        <option value="cash">Cash on delivery</option>
+        <option value="card">Bank card</option>
+        <option value="ccp">CCP</option>
+      </select>
+
+      <input type="text" id="transactionNumber" placeholder="Transaction number" />
+      <input type="text" id="couponCode" placeholder="Coupon code if any" />
+
+      <button type="submit">Confirm order</button>
+    </form>
+
+    <div id="checkoutResult"></div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="checkout.js"></script>
+</body>
+</html>
