@@ -5,7 +5,7 @@
 
 // ⚠️ استبدل هذين بقيم مشروعك من Supabase Dashboard → Project Settings → API
 const SUPABASE_URL = "https://jeixaxbcqytzbdsksdol.supabase.co";
-const SUPABASE_ANON_KEY = "YOUR_ANON_KEY";
+const SUPABASE_ANON_KEY = "sb_secret_1vSOdCeI3Yi-SydF36eDSw_IQnpY8ik";
 
 let supabase = null;
 let currentQty = 1;
