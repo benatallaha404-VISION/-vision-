@@ -1,10 +1,9 @@
 /* ========================================
    متجرك - Supabase Edition
-   PostgreSQL + Storage + Auth + EmailJS + Sheets
    العملة: الدينار الجزائري (د.ج)
    ======================================== */
 
-// ⚠️ استبدل هذين بقيم مشروعك من Supabase Dashboard
+// ⚠️ استبدل هذين بقيم مشروعك من Supabase Dashboard → Project Settings → API
 const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
 const SUPABASE_ANON_KEY = "YOUR_ANON_KEY";
 
@@ -14,63 +13,52 @@ let sliderInterval = null;
 let currentSlide = 0;
 let currentOrderFilter = 'all';
 
-// ==================== تهيئة Supabase ====================
 function initSupabase() {
-    if (!SUPABASE_URL.includes('YOUR_PROJECT')) {
-        throw new Error('⚠️ يرجى استبدال SUPABASE_URL و SUPABASE_ANON_KEY في app.js');
+    if (!window.supabase) {
+        throw new Error('مكتبة Supabase لم تُحمل. تأكد من وضع <script> قبل app.js');
+    }
+    if (SUPABASE_URL.includes('YOUR_PROJECT')) {
+        throw new Error('استبدل YOUR_PROJECT في SUPABASE_URL بقيمة حقيقية من Supabase');
     }
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log("✅ Supabase initialized");
+    console.log("✅ Supabase connected");
 }
 
-// ==================== تسجيل الخروج ====================
 async function logoutAdmin() {
     await supabase.auth.signOut();
     window.location.href = 'login.html';
 }
 
-// ==================== رفع الصور ====================
 async function uploadImage(file, folder) {
     if (!file) return null;
     const fileName = `${folder}/${Date.now()}_${file.name}`;
-    const { data, error } = await supabase.storage.from('images').upload(fileName, file);
-    if (error) { console.error('Upload error:', error); return null; }
-    
-    const { data: { publicUrl } } = supabase.storage.from('images').getPublicUrl(fileName);
-    return publicUrl;
+    const { error } = await supabase.storage.from('images').upload(fileName, file);
+    if (error) { console.error(error); return null; }
+    const { data } = supabase.storage.from('images').getPublicUrl(fileName);
+    return data.publicUrl;
 }
 
 function previewImage(input, previewId) {
     const preview = document.getElementById(previewId);
     if (input.files && input.files[0]) {
         const reader = new FileReader();
-        reader.onload = e => {
-            preview.src = e.target.result;
-            preview.style.display = 'block';
-        };
+        reader.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; };
         reader.readAsDataURL(input.files[0]);
     }
 }
 
-// ==================== المنتجات ====================
 async function displayProducts() {
     const grid = document.getElementById('productsGrid');
     const emptyState = document.getElementById('emptyState');
     const countEl = document.getElementById('productsCount');
     if (!grid) return;
-    
     const query = document.getElementById('searchInput')?.value.toLowerCase() || '';
     
     const { data: products, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
     if (error) { console.error(error); return; }
     
     let filtered = products || [];
-    if (query) {
-        filtered = filtered.filter(p => 
-            p.name.toLowerCase().includes(query) || 
-            (p.category && p.category.toLowerCase().includes(query))
-        );
-    }
+    if (query) filtered = filtered.filter(p => p.name.toLowerCase().includes(query) || (p.category && p.category.toLowerCase().includes(query)));
     
     if (filtered.length === 0) {
         grid.innerHTML = '';
@@ -78,14 +66,12 @@ async function displayProducts() {
         if (countEl) countEl.textContent = 'لا توجد منتجات';
         return;
     }
-    
     if (emptyState) emptyState.style.display = 'none';
     if (countEl) countEl.textContent = `${filtered.length} منتج`;
     
     grid.innerHTML = filtered.map(p => `
         <div class="product-card" onclick="goToProduct(${p.id})">
-            <img src="${p.image || 'https://via.placeholder.com/400x400/1a1a1a/666?text=No+Image'}" 
-                 alt="${p.name}" class="product-image" onerror="this.src='https://via.placeholder.com/400x400/1a1a1a/666?text=No+Image'">
+            <img src="${p.image || 'https://via.placeholder.com/400x400/1a1a1a/666?text=No+Image'}" alt="${p.name}" class="product-image" onerror="this.src='https://via.placeholder.com/400x400/1a1a1a/666?text=No+Image'">
             <div class="product-info">
                 <div class="product-category">${p.category || 'عام'}</div>
                 <h3 class="product-name">${p.name}</h3>
@@ -104,7 +90,6 @@ function goToProduct(productId) { window.location.href = `product.html?id=${prod
 async function displayProductDetail() {
     const container = document.getElementById('productDetail');
     if (!container) return;
-    
     const urlParams = new URLSearchParams(window.location.search);
     const productId = urlParams.get('id');
     
@@ -113,12 +98,9 @@ async function displayProductDetail() {
         container.innerHTML = `<div class="empty-state"><p>المنتج غير موجود</p><a href="index.html" class="btn btn-primary">العودة للرئيسية</a></div>`;
         return;
     }
-    
     window.currentProductPrice = parseFloat(p.price);
-    
     container.innerHTML = `
-        <img src="${p.image || 'https://via.placeholder.com/600x600/1a1a1a/666?text=No+Image'}" 
-             alt="${p.name}" class="product-detail-image" onerror="this.src='https://via.placeholder.com/600x600/1a1a1a/666?text=No+Image'">
+        <img src="${p.image || 'https://via.placeholder.com/600x600/1a1a1a/666?text=No+Image'}" alt="${p.name}" class="product-detail-image" onerror="this.src='https://via.placeholder.com/600x600/1a1a1a/666?text=No+Image'">
         <div class="product-detail-info">
             <div class="product-category">${p.category || 'عام'}</div>
             <h1>${p.name}</h1>
@@ -145,23 +127,16 @@ function changeQty(delta) {
 }
 function getQty() { return currentQty; }
 
-// ==================== السلة ====================
 function getCart() { return JSON.parse(localStorage.getItem('store_cart')) || []; }
 function saveCart(cart) { localStorage.setItem('store_cart', JSON.stringify(cart)); }
 
 async function addToCart(productId, quantity = 1) {
     const { data: product, error } = await supabase.from('products').select('*').eq('id', productId).single();
     if (error || !product) return;
-    
     let cart = getCart();
     const existing = cart.find(item => item.id === productId);
-    
-    if (existing) {
-        existing.quantity += quantity;
-    } else {
-        cart.push({ id: productId, name: product.name, price: product.price, image: product.image, quantity });
-    }
-    
+    if (existing) existing.quantity += quantity;
+    else cart.push({ id: productId, name: product.name, price: product.price, image: product.image, quantity });
     saveCart(cart);
     updateCartCount();
     showToast('تمت الإضافة للسلة بنجاح', 'success');
@@ -176,7 +151,6 @@ function updateCartCount() {
 function displayCart() {
     const container = document.getElementById('cartItems');
     if (!container) return;
-    
     const cart = getCart();
     if (cart.length === 0) {
         container.innerHTML = `<div class="empty-state"><p>السلة فارغة</p><a href="index.html" class="btn btn-primary">تسوق الآن</a></div>`;
@@ -184,7 +158,6 @@ function displayCart() {
         document.getElementById('totalPrice').textContent = '0 د.ج';
         return;
     }
-    
     let total = 0;
     container.innerHTML = cart.map(item => {
         const itemTotal = item.price * item.quantity;
@@ -201,7 +174,6 @@ function displayCart() {
             </div>
         `;
     }).join('');
-    
     document.getElementById('subtotal').textContent = total.toFixed(2) + ' د.ج';
     document.getElementById('totalPrice').textContent = total.toFixed(2) + ' د.ج';
 }
@@ -214,13 +186,10 @@ function removeFromCart(productId) {
     showToast('تم الحذف من السلة', 'success');
 }
 
-// ==================== إتمام الطلب ====================
 async function handleCheckout(e) {
     e.preventDefault();
-    
     const cart = getCart();
     if (cart.length === 0) { showToast('السلة فارغة!', 'error'); return; }
-    
     const btn = document.getElementById('submitOrder');
     btn.disabled = true;
     btn.textContent = 'جاري إرسال الطلب...';
@@ -239,7 +208,6 @@ async function handleCheckout(e) {
     };
     
     const { error } = await supabase.from('orders').insert([orderData]);
-    
     if (error) {
         console.error(error);
         showToast('حدث خطأ، يرجى المحاولة مرة أخرى', 'error');
@@ -247,10 +215,8 @@ async function handleCheckout(e) {
         btn.textContent = 'تأكيد الطلب';
         return;
     }
-    
     sendEmail(orderData);
     sendToGoogleSheets(orderData);
-    
     saveCart([]);
     updateCartCount();
     showToast('تم إرسال طلبك بنجاح!', 'success');
@@ -292,16 +258,13 @@ function sendToGoogleSheets(orderData) {
     });
 }
 
-// ==================== لوحة التحكم ====================
 function showSection(sectionId, linkEl) {
     document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
     document.getElementById('sec-' + sectionId)?.classList.add('active');
     document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
     if (linkEl) linkEl.classList.add('active');
-    
     const titles = { dashboard: 'لوحة المعلومات', products: 'إدارة المنتجات', orders: 'إدارة الطلبات', earnings: 'الأرباح', slider: 'إدارة السلايدر', settings: 'الإعدادات' };
     document.getElementById('pageTitle').textContent = titles[sectionId] || '';
-    
     if (sectionId === 'dashboard') loadDashboard();
     if (sectionId === 'products') loadAdminProducts();
     if (sectionId === 'orders') loadOrders('all');
@@ -312,11 +275,9 @@ function showSection(sectionId, linkEl) {
 
 function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
 
-// ==================== Dashboard ====================
 async function loadDashboard() {
     const { data: products } = await supabase.from('products').select('id');
     const { data: orders } = await supabase.from('orders').select('*');
-    
     const productsCount = products?.length || 0;
     const allOrders = orders || [];
     const pending = allOrders.filter(o => o.status === 'pending').length;
@@ -330,13 +291,11 @@ async function loadDashboard() {
     
     const tbody = document.getElementById('recentOrdersTable');
     if (!tbody) return;
-    
     const recent = allOrders.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 5);
     if (recent.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:32px;">لا توجد طلبات بعد</td></tr>';
         return;
     }
-    
     tbody.innerHTML = recent.map(o => {
         const statusClass = { pending: 'status-pending', completed: 'status-completed', cancelled: 'status-cancelled', returned: 'status-returned' }[o.status] || 'status-pending';
         const statusText = { pending: 'معلق', completed: 'تم', cancelled: 'ملغي', returned: 'مرتجع' }[o.status] || 'معلق';
@@ -345,22 +304,17 @@ async function loadDashboard() {
     }).join('');
 }
 
-// ==================== المنتجات في الأدمن ====================
 async function loadAdminProducts() {
     const tbody = document.getElementById('productsTable');
     const badge = document.getElementById('totalProductsBadge');
     if (!tbody) return;
-    
     const { data: products, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
     if (error) { console.error(error); return; }
-    
     if (badge) badge.textContent = (products?.length || 0) + ' منتج';
-    
     if (!products || products.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:32px;">لا توجد منتجات بعد</td></tr>';
         return;
     }
-    
     tbody.innerHTML = products.map((p, i) => `
         <tr>
             <td>${i + 1}</td>
@@ -378,7 +332,6 @@ async function loadAdminProducts() {
 
 async function handleProductSubmit(e) {
     e.preventDefault();
-    
     const id = document.getElementById('productId').value;
     const name = document.getElementById('productName').value.trim();
     const price = parseFloat(document.getElementById('productPrice').value);
@@ -387,7 +340,6 @@ async function handleProductSubmit(e) {
     const description = document.getElementById('productDesc').value.trim();
     const imageFile = document.getElementById('productImageFile').files[0];
     const existingImage = document.getElementById('productImage').value;
-    
     if (!name || isNaN(price)) { showToast('يرجى ملء الحقول المطلوبة', 'error'); return; }
     
     const btn = document.getElementById('submitBtn');
@@ -395,22 +347,16 @@ async function handleProductSubmit(e) {
     btn.textContent = id ? 'جاري الحفظ...' : 'جاري الإضافة...';
     
     let imageUrl = existingImage;
-    if (imageFile) {
-        imageUrl = await uploadImage(imageFile, 'products');
-    }
-    
+    if (imageFile) imageUrl = await uploadImage(imageFile, 'products');
     const data = { name, price, category, stock, image: imageUrl, description };
     
     if (id) {
         const { error } = await supabase.from('products').update(data).eq('id', id);
-        if (error) showToast('حدث خطأ', 'error');
-        else showToast('تم تعديل المنتج بنجاح', 'success');
+        if (!error) showToast('تم تعديل المنتج بنجاح', 'success');
     } else {
         const { error } = await supabase.from('products').insert([data]);
-        if (error) showToast('حدث خطأ', 'error');
-        else showToast('تمت إضافة المنتج بنجاح', 'success');
+        if (!error) showToast('تمت إضافة المنتج بنجاح', 'success');
     }
-    
     loadAdminProducts();
     resetProductForm();
     btn.disabled = false;
@@ -420,7 +366,6 @@ async function handleProductSubmit(e) {
 async function editProduct(productId) {
     const { data: p, error } = await supabase.from('products').select('*').eq('id', productId).single();
     if (error || !p) return;
-    
     document.getElementById('productId').value = productId;
     document.getElementById('productName').value = p.name;
     document.getElementById('productPrice').value = p.price;
@@ -428,11 +373,9 @@ async function editProduct(productId) {
     document.getElementById('productStock').value = p.stock || 0;
     document.getElementById('productImage').value = p.image || '';
     document.getElementById('productDesc').value = p.description || '';
-    
     const preview = document.getElementById('productPreview');
     if (p.image) { preview.src = p.image; preview.style.display = 'block'; }
     else preview.style.display = 'none';
-    
     document.getElementById('submitBtn').textContent = 'حفظ التعديلات';
     document.getElementById('cancelBtn').style.display = 'inline-flex';
     document.getElementById('productForm').scrollIntoView({ behavior: 'smooth' });
@@ -454,29 +397,23 @@ function resetProductForm() {
     document.getElementById('cancelBtn').style.display = 'none';
 }
 
-// ==================== الطلبات ====================
 async function loadOrders(status) {
     currentOrderFilter = status;
     const tbody = document.getElementById('ordersTable');
     if (!tbody) return;
-    
     let query = supabase.from('orders').select('*').order('created_at', { ascending: false });
     if (status !== 'all') query = query.eq('status', status);
-    
     const { data: orders, error } = await query;
     if (error) { console.error(error); return; }
-    
     if (!orders || orders.length === 0) {
         tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:32px;">لا توجد طلبات</td></tr>';
         return;
     }
-    
     tbody.innerHTML = orders.map(o => {
         const itemsText = Array.isArray(o.items) ? o.items.map(i => `${i.name} (x${i.quantity})`).join(', ') : '';
         const statusClass = { pending: 'status-pending', completed: 'status-completed', cancelled: 'status-cancelled', returned: 'status-returned' }[o.status] || 'status-pending';
         const statusText = { pending: 'معلق', completed: 'تم', cancelled: 'ملغي', returned: 'مرتجع' }[o.status] || 'معلق';
         const date = o.created_at ? new Date(o.created_at).toLocaleDateString('ar-DZ') : '-';
-        
         return `
             <tr>
                 <td>${o.order_id}</td>
@@ -515,13 +452,10 @@ async function changeOrderStatus(orderId, status) {
     loadEarnings();
 }
 
-// ==================== الأرباح ====================
 async function loadEarnings() {
     const { data: completed } = await supabase.from('orders').select('*').eq('status', 'completed');
     const orders = completed || [];
-    
     const totalEarnings = orders.reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0);
-    
     const now = new Date();
     const monthOrders = orders.filter(o => {
         if (!o.created_at) return false;
@@ -536,7 +470,6 @@ async function loadEarnings() {
     
     const tbody = document.getElementById('monthlyEarningsTable');
     if (!tbody) return;
-    
     const months = {};
     orders.forEach(o => {
         if (!o.created_at) return;
@@ -546,31 +479,26 @@ async function loadEarnings() {
         months[key].orders++;
         months[key].total += parseFloat(o.total) || 0;
     });
-    
     const monthly = Object.values(months).sort((a, b) => b.total - a.total);
     if (monthly.length === 0) {
         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:32px;">لا توجد أرباح بعد</td></tr>';
         return;
     }
-    
     tbody.innerHTML = monthly.map(m => `
         <tr><td>${m.month}</td><td>${m.orders}</td><td>${m.total.toFixed(2)} د.ج</td><td style="color:var(--success);font-weight:700;">${m.total.toFixed(2)} د.ج</td></tr>
     `).join('');
 }
 
-// ==================== السلايدر ====================
 async function renderSlider() {
     const container = document.getElementById('sliderContainer');
     const dotsContainer = document.getElementById('sliderDots');
     if (!container) return;
-    
     const { data: slides, error } = await supabase.from('slider').select('*').order('sort_order', { ascending: true });
     if (error || !slides || slides.length === 0) {
         container.innerHTML = '';
         if (dotsContainer) dotsContainer.innerHTML = '';
         return;
     }
-    
     container.innerHTML = slides.map((s, i) => `
         <div class="slide" data-index="${i}">
             <img src="${s.image_url}" alt="${s.title}" onerror="this.src='https://via.placeholder.com/1200x500/1a1a1a/666?text=Slide'">
@@ -580,13 +508,11 @@ async function renderSlider() {
             </div>
         </div>
     `).join('');
-    
     if (dotsContainer) {
         dotsContainer.innerHTML = slides.map((_, i) => `
             <button class="slider-dot ${i === 0 ? 'active' : ''}" onclick="goToSlide(${i})"></button>
         `).join('');
     }
-    
     currentSlide = 0;
     startSlider();
 }
@@ -616,13 +542,11 @@ function updateSliderPosition() {
 async function loadSliderAdmin() {
     const grid = document.getElementById('sliderPreviewGrid');
     if (!grid) return;
-    
     const { data: slides, error } = await supabase.from('slider').select('*').order('sort_order', { ascending: true });
     if (error || !slides || slides.length === 0) {
         grid.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:32px;">لا توجد سلايدات</p>';
         return;
     }
-    
     grid.innerHTML = slides.map(s => `
         <div class="slide-preview-card">
             <img src="${s.image_url}" alt="${s.title}" onerror="this.src='https://via.placeholder.com/300x160/1a1a1a/666?text=No+Image'">
@@ -640,14 +564,12 @@ async function loadSliderAdmin() {
 
 async function handleSliderSubmit(e) {
     e.preventDefault();
-    
     const id = document.getElementById('slideId').value;
     const title = document.getElementById('slideTitle').value.trim();
     const linkUrl = document.getElementById('slideLink').value.trim();
     const sortOrder = parseInt(document.getElementById('slideOrder').value) || 1;
     const imageFile = document.getElementById('slideImageFile').files[0];
     const existingImage = document.getElementById('slideImage').value;
-    
     if (!title) { showToast('يرجى إدخال عنوان السلايد', 'error'); return; }
     
     const btn = document.getElementById('slideSubmitBtn');
@@ -656,7 +578,6 @@ async function handleSliderSubmit(e) {
     
     let imageUrl = existingImage;
     if (imageFile) imageUrl = await uploadImage(imageFile, 'slider');
-    
     if (!imageUrl && !id) { showToast('يرجى اختيار صورة', 'error'); btn.disabled = false; btn.textContent = id ? 'حفظ التعديلات' : 'إضافة سلايد'; return; }
     
     const data = { title, link_url: linkUrl, sort_order: sortOrder };
@@ -669,7 +590,6 @@ async function handleSliderSubmit(e) {
         const { error } = await supabase.from('slider').insert([data]);
         if (!error) showToast('تمت إضافة السلايد بنجاح', 'success');
     }
-    
     loadSliderAdmin();
     resetSliderForm();
     btn.disabled = false;
@@ -679,17 +599,14 @@ async function handleSliderSubmit(e) {
 async function editSlider(id) {
     const { data: s, error } = await supabase.from('slider').select('*').eq('id', id).single();
     if (error || !s) return;
-    
     document.getElementById('slideId').value = id;
     document.getElementById('slideTitle').value = s.title;
     document.getElementById('slideLink').value = s.link_url || '';
     document.getElementById('slideOrder').value = s.sort_order || 1;
     document.getElementById('slideImage').value = s.image_url || '';
-    
     const preview = document.getElementById('slidePreview');
     if (s.image_url) { preview.src = s.image_url; preview.style.display = 'block'; }
     else preview.style.display = 'none';
-    
     document.getElementById('slideSubmitBtn').textContent = 'حفظ التعديلات';
     document.getElementById('slideCancelBtn').style.display = 'inline-flex';
 }
@@ -710,24 +627,17 @@ function resetSliderForm() {
     document.getElementById('slideCancelBtn').style.display = 'none';
 }
 
-// ==================== الإعدادات والألوان ====================
 function loadSettings() {
     const settings = JSON.parse(localStorage.getItem('store_settings') || '{}');
-    const elKey = document.getElementById('emailjsKey');
-    const elService = document.getElementById('emailjsService');
-    const elTemplate = document.getElementById('emailjsTemplate');
-    const elSheets = document.getElementById('sheetsUrl');
-    
-    if (elKey) elKey.value = settings.emailjs_key || '';
-    if (elService) elService.value = settings.emailjs_service || '';
-    if (elTemplate) elTemplate.value = settings.emailjs_template || '';
-    if (elSheets) elSheets.value = settings.sheets_url || '';
-    
+    if (document.getElementById('emailjsKey')) document.getElementById('emailjsKey').value = settings.emailjs_key || '';
+    if (document.getElementById('emailjsService')) document.getElementById('emailjsService').value = settings.emailjs_service || '';
+    if (document.getElementById('emailjsTemplate')) document.getElementById('emailjsTemplate').value = settings.emailjs_template || '';
+    if (document.getElementById('sheetsUrl')) document.getElementById('sheetsUrl').value = settings.sheets_url || '';
     const theme = JSON.parse(localStorage.getItem('store_theme') || '{}');
-    if (theme.bg) document.getElementById('bgColor').value = theme.bg;
-    if (theme.text) document.getElementById('textColor').value = theme.text;
-    if (theme.btn) document.getElementById('btnColor').value = theme.btn;
-    if (theme.bgSecondary) document.getElementById('bgSecondary').value = theme.bgSecondary;
+    if (theme.bg && document.getElementById('bgColor')) document.getElementById('bgColor').value = theme.bg;
+    if (theme.text && document.getElementById('textColor')) document.getElementById('textColor').value = theme.text;
+    if (theme.btn && document.getElementById('btnColor')) document.getElementById('btnColor').value = theme.btn;
+    if (theme.bgSecondary && document.getElementById('bgSecondary')) document.getElementById('bgSecondary').value = theme.bgSecondary;
 }
 
 function saveSettings() {
@@ -744,3 +654,51 @@ function saveSettings() {
 function updateTheme() {
     const bg = document.getElementById('bgColor')?.value || '#0a0a0a';
     const text = document.getElementById('textColor')?.value || '#ffffff';
+    const btn = document.getElementById('btnColor')?.value || '#ffffff';
+    const bgSecondary = document.getElementById('bgSecondary')?.value || '#111111';
+    document.documentElement.style.setProperty('--bg-primary', bg);
+    document.documentElement.style.setProperty('--bg-secondary', bgSecondary);
+    document.documentElement.style.setProperty('--text-primary', text);
+    document.documentElement.style.setProperty('--accent', btn);
+}
+
+function saveTheme() {
+    const theme = {
+        bg: document.getElementById('bgColor')?.value || '#0a0a0a',
+        text: document.getElementById('textColor')?.value || '#ffffff',
+        btn: document.getElementById('btnColor')?.value || '#ffffff',
+        bgSecondary: document.getElementById('bgSecondary')?.value || '#111111'
+    };
+    localStorage.setItem('store_theme', JSON.stringify(theme));
+    showToast('تم حفظ الألوان', 'success');
+}
+
+function resetTheme() {
+    const defaults = { bg: '#0a0a0a', text: '#ffffff', btn: '#ffffff', bgSecondary: '#111111' };
+    if (document.getElementById('bgColor')) document.getElementById('bgColor').value = defaults.bg;
+    if (document.getElementById('textColor')) document.getElementById('textColor').value = defaults.text;
+    if (document.getElementById('btnColor')) document.getElementById('btnColor').value = defaults.btn;
+    if (document.getElementById('bgSecondary')) document.getElementById('bgSecondary').value = defaults.bgSecondary;
+    updateTheme();
+    localStorage.setItem('store_theme', JSON.stringify(defaults));
+    showToast('تمت إعادة الألوان الافتراضية', 'success');
+}
+
+function loadTheme() {
+    const theme = JSON.parse(localStorage.getItem('store_theme') || '{}');
+    if (theme.bg) document.documentElement.style.setProperty('--bg-primary', theme.bg);
+    if (theme.bgSecondary) document.documentElement.style.setProperty('--bg-secondary', theme.bgSecondary);
+    if (theme.text) document.documentElement.style.setProperty('--text-primary', theme.text);
+    if (theme.btn) document.documentElement.style.setProperty('--accent', theme.btn);
+}
+
+function showToast(message, type) {
+    const existing = document.querySelector('.toast');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.classList.add('show'), 10);
+    setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 400); }, 3000);
+}
