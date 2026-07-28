@@ -34,7 +34,6 @@
         </header>
 
         <div class="admin-content">
-            <!-- Dashboard -->
             <section id="sec-dashboard" class="admin-section active">
                 <div class="stats-grid">
                     <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-info"><h3 id="statProducts">0</h3><p>إجمالي المنتجات</p></div></div>
@@ -48,7 +47,6 @@
                 </div>
             </section>
 
-            <!-- Products -->
             <section id="sec-products" class="admin-section">
                 <div class="admin-card">
                     <h2>إضافة / تعديل منتج</h2>
@@ -81,7 +79,6 @@
                 </div>
             </section>
 
-            <!-- Orders -->
             <section id="sec-orders" class="admin-section">
                 <div class="admin-card">
                     <div class="card-header">
@@ -98,7 +95,6 @@
                 </div>
             </section>
 
-            <!-- Earnings -->
             <section id="sec-earnings" class="admin-section">
                 <div class="stats-grid">
                     <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-info"><h3 id="totalEarnings">0 د.ج</h3><p>إجمالي الأرباح</p></div></div>
@@ -111,7 +107,6 @@
                 </div>
             </section>
 
-            <!-- Slider -->
             <section id="sec-slider" class="admin-section">
                 <div class="admin-card">
                     <h2>إدارة السلايدر</h2>
@@ -137,7 +132,6 @@
                 <div class="admin-card"><div class="card-header"><h2>السلايدات الحالية</h2></div><div class="slider-preview-grid" id="sliderPreviewGrid"></div></div>
             </section>
 
-            <!-- Settings -->
             <section id="sec-settings" class="admin-section">
                 <div class="admin-card">
                     <h2>تخصيص ألوان الموقع</h2>
@@ -164,21 +158,21 @@
         </div>
     </main>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="app.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            initFirebase();
-            auth.onAuthStateChanged(user => {
-                if (!user) { window.location.href = 'login.html'; return; }
-                document.getElementById('adminEmail').textContent = user.email;
-                loadTheme();
-                showSection('dashboard', document.querySelector('.sidebar-link.active'));
-            });
+        document.addEventListener('DOMContentLoaded', async () => {
+            initSupabase();
+            
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) { window.location.href = 'login.html'; return; }
+            
+            const { data: { user } } = await supabase.auth.getUser();
+            document.getElementById('adminEmail').textContent = user?.email || 'المشرف';
+            
+            loadTheme();
+            showSection('dashboard', document.querySelector('.sidebar-link.active'));
         });
     </script>
 </body>
