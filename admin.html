@@ -1,308 +1,132 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Dashboard</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم | المشرف</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="admin-layout">
-    <aside class="side-menu">
-      <h2>📊 Dashboard</h2>
-      <button class="menu-btn active" data-target="panel-design">🎨 Design</button>
-      <button class="menu-btn" data-target="panel-products">📦 Products</button>
-      <button class="menu-btn" data-target="panel-categories">📂 Categories</button>
-      <button class="menu-btn" data-target="panel-slider">🖼️ Slider</button>
-      <button class="menu-btn" data-target="panel-orders">📋 Orders</button>
-      <button class="menu-btn" data-target="panel-profits">💰 Profits</button>
-      <button class="menu-btn" data-target="panel-coupons">🏷️ Coupons</button>
-      <button class="menu-btn" data-target="panel-shipping">🚚 Shipping</button>
-      <button class="menu-btn" data-target="panel-comments">💬 Comments</button>
-      <button class="menu-btn" data-target="panel-settings">⚙️ Settings</button>
-      <hr />
-      <a href="index.html">← Back to Store</a>
-    </aside>
-
-    <main class="admin-content">
-      <!-- ===== DESIGN PANEL ===== -->
-      <section id="panel-design" class="admin-panel active">
-        <h1>🎨 Design Settings</h1>
-        <div class="form-group">
-          <label>Store Name</label>
-          <input type="text" id="storeNameInput" placeholder="Store name" />
-        </div>
-        <div class="form-group">
-          <label>Nickname</label>
-          <input type="text" id="nicknameInput" placeholder="Nickname" />
-        </div>
-        <div class="form-group">
-          <label>Brand Identity</label>
-          <input type="text" id="brandIdentityInput" placeholder="Brand identity" />
-        </div>
-        <div class="form-group">
-          <label>Primary Color</label>
-          <input type="color" id="primaryColorInput" />
-        </div>
-        <div class="form-group">
-          <label>Secondary Color</label>
-          <input type="color" id="secondaryColorInput" />
-        </div>
-        <div class="form-group">
-          <label>Accent Color</label>
-          <input type="color" id="accentColorInput" />
-        </div>
-        <div class="form-group">
-          <label>Text Color</label>
-          <input type="color" id="textColorInput" />
-        </div>
-        <div class="form-group">
-          <label>Logo URL</label>
-          <input type="text" id="logoUrlInput" placeholder="Logo URL" />
-        </div>
-        <div class="form-group">
-          <label>Footer Text</label>
-          <textarea id="footerTextInput" placeholder="Footer text"></textarea>
-        </div>
-        <div class="form-group">
-          <label>Card Style</label>
-          <select id="cardStyleInput">
-            <option value="classic">Classic</option>
-            <option value="premium">Premium</option>
-            <option value="gold">Gold</option>
-          </select>
-        </div>
-        <button id="saveDesignBtn" class="save-btn">💾 Save Design</button>
-        <div id="designMessage" class="message"></div>
-      </section>
-
-      <!-- ===== PRODUCTS PANEL ===== -->
-      <section id="panel-products" class="admin-panel">
-        <h1>📦 Products</h1>
-        
-        <form id="productForm" class="admin-form">
-          <div class="form-group">
-            <label>Product Name *</label>
-            <input type="text" id="productName" placeholder="Product name" required />
-          </div>
-          
-          <div class="form-group">
-            <label>Description *</label>
-            <textarea id="productDescription" placeholder="Product description" required></textarea>
-          </div>
-          
-          <!-- Drop Zone for Images -->
-          <div class="form-group">
-            <label>Images * (Upload at least one image)</label>
-            <div id="productDropZone" class="drop-zone">
-              <div class="drop-zone-content">
-                <i class="fas fa-cloud-upload-alt"></i>
-                <p>Drag & drop images here</p>
-                <p class="small-note">or click to select files</p>
-              </div>
-              <input type="file" id="productImages" accept="image/*" multiple required />
+    <nav class="navbar">
+        <div class="container nav-content">
+            <a href="index.html" class="logo">متجرك</a>
+            <div class="nav-links">
+                <a href="index.html">الرئيسية</a>
+                <a href="admin.html" class="active">لوحة التحكم</a>
             </div>
-            <div id="productImagePreview" class="image-preview-grid"></div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Price *</label>
-              <input type="number" id="productPrice" placeholder="Price" required />
-            </div>
-            <div class="form-group">
-              <label>Before Discount</label>
-              <input type="number" id="productBeforeDiscount" placeholder="Before discount" />
-            </div>
-            <div class="form-group">
-              <label>After Discount</label>
-              <input type="number" id="productAfterDiscount" placeholder="After discount" />
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Mode</label>
-              <select id="productMode">
-                <option value="buy">Buy</option>
-                <option value="rent">Rent</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Stock</label>
-              <input type="number" id="productStock" placeholder="Stock" />
-            </div>
-            <div class="form-group">
-              <label>Category</label>
-              <select id="productCategory">
-                <option value="">Select category</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Sizes</label>
-              <input type="text" id="productSizes" placeholder="S, M, L, XL" />
-            </div>
-            <div class="form-group">
-              <label>Colors</label>
-              <input type="text" id="productColors" placeholder="Red, Blue, Black" />
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label><input type="checkbox" id="isBestSeller" /> Best Seller</label>
-            </div>
-            <div class="form-group">
-              <label><input type="checkbox" id="isSpecialOffer" /> Special Offer</label>
-            </div>
-          </div>
-
-          <button type="submit" class="save-btn">💾 Save Product</button>
-        </form>
-
-        <div id="productMessage" class="message"></div>
-        
-        <h2>Product List</h2>
-        <div id="productsAdminList" class="products-grid"></div>
-      </section>
-
-      <!-- ===== CATEGORIES PANEL ===== -->
-      <section id="panel-categories" class="admin-panel">
-        <h1>📂 Categories</h1>
-        <div class="form-row">
-          <div class="form-group">
-            <input type="text" id="categoryName" placeholder="Category name" />
-          </div>
-          <div class="form-group">
-            <button id="addCategoryBtn" class="save-btn">➕ Add Category</button>
-          </div>
         </div>
-        <div id="categoryMessage" class="message"></div>
-        <div id="categoriesAdminList" class="categories-grid"></div>
-      </section>
+    </nav>
 
-      <!-- ===== SLIDER PANEL ===== -->
-      <section id="panel-slider" class="admin-panel">
-        <h1>🖼️ Slider</h1>
-        
-        <div class="form-group">
-          <label>Slide Title *</label>
-          <input type="text" id="slideTitle" placeholder="Slide title" />
-        </div>
-        
-        <div class="form-group">
-          <label>Slide Text *</label>
-          <textarea id="slideText" placeholder="Slide text"></textarea>
-        </div>
-        
-        <!-- Drop Zone for Slide Image -->
-        <div class="form-group">
-          <label>Slide Image *</label>
-          <div id="slideDropZone" class="drop-zone">
-            <div class="drop-zone-content">
-              <i class="fas fa-cloud-upload-alt"></i>
-              <p>Drag & drop image here</p>
-              <p class="small-note">or click to select file</p>
+    <main class="container">
+        <section class="admin-section">
+            <div class="admin-header">
+                <h1>لوحة التحكم</h1>
+                <p>إدارة المنتجات والطلبات</p>
             </div>
-            <input type="file" id="slideImageFile" accept="image/*" required />
-          </div>
-          <div id="slideImagePreview" class="image-preview-grid"></div>
-        </div>
 
-        <button id="addSlideBtn" class="save-btn">➕ Add Slide</button>
-        <div id="slideMessage" class="message"></div>
-        <div id="slidesAdminList"></div>
-      </section>
+            <!-- نموذج إضافة منتج -->
+            <div class="admin-card">
+                <h2>إضافة / تعديل منتج</h2>
+                <form id="productForm" onsubmit="handleProductSubmit(event)">
+                    <input type="hidden" id="productId">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>اسم المنتج</label>
+                            <input type="text" id="productName" required placeholder="مثال: ساعة يد فاخرة">
+                        </div>
+                        <div class="form-group">
+                            <label>السعر (ريال)</label>
+                            <input type="number" id="productPrice" required min="0" step="0.01" placeholder="199.00">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>الفئة</label>
+                            <input type="text" id="productCategory" placeholder="مثال: إلكترونيات">
+                        </div>
+                        <div class="form-group">
+                            <label>الكمية المتوفرة</label>
+                            <input type="number" id="productStock" min="0" value="10">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>رابط الصورة</label>
+                        <input type="url" id="productImage" placeholder="https://example.com/image.jpg">
+                    </div>
+                    <div class="form-group">
+                        <label>وصف المنتج</label>
+                        <textarea id="productDesc" rows="3" placeholder="وصف تفصيلي للمنتج..."></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" id="submitBtn">إضافة المنتج</button>
+                        <button type="button" class="btn btn-secondary" onclick="resetForm()" id="cancelBtn" style="display:none;">إلغاء</button>
+                    </div>
+                </form>
+            </div>
 
-      <!-- ===== ORDERS PANEL ===== -->
-      <section id="panel-orders" class="admin-panel">
-        <h1>📋 Orders</h1>
-        <div id="ordersAdminList" class="orders-grid"></div>
-      </section>
+            <!-- جدول المنتجات -->
+            <div class="admin-card">
+                <div class="card-header">
+                    <h2>المنتجات المخزنة</h2>
+                    <span class="badge" id="totalProducts">0 منتج</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>الصورة</th>
+                                <th>الاسم</th>
+                                <th>السعر</th>
+                                <th>الكمية</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsTable">
+                            <!-- الصفوف تُعرض هنا -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="empty-state" id="adminEmptyState" style="display:none;">
+                    <p>لا توجد منتجات بعد</p>
+                </div>
+            </div>
 
-      <!-- ===== PROFITS PANEL ===== -->
-      <section id="panel-profits" class="admin-panel">
-        <h1>💰 Monthly Profits</h1>
-        <div id="monthlyProfits"></div>
-      </section>
-
-      <!-- ===== COUPONS PANEL ===== -->
-      <section id="panel-coupons" class="admin-panel">
-        <h1>🏷️ Coupons</h1>
-        <div class="form-row">
-          <div class="form-group">
-            <input type="text" id="couponName" placeholder="Coupon code" />
-          </div>
-          <div class="form-group">
-            <input type="number" id="couponValue" placeholder="Discount value" />
-          </div>
-          <div class="form-group">
-            <button id="addCouponBtn" class="save-btn">➕ Add Coupon</button>
-          </div>
-        </div>
-        <div id="couponMessage" class="message"></div>
-        <div id="couponsAdminList" class="coupons-grid"></div>
-      </section>
-
-      <!-- ===== SHIPPING PANEL ===== -->
-      <section id="panel-shipping" class="admin-panel">
-        <h1>🚚 Shipping</h1>
-        <div class="form-row">
-          <div class="form-group">
-            <input type="text" id="shippingState" placeholder="State" />
-          </div>
-          <div class="form-group">
-            <input type="number" id="shippingPrice" placeholder="Shipping price" />
-          </div>
-          <div class="form-group">
-            <label><input type="checkbox" id="shippingFree" /> Free shipping</label>
-          </div>
-          <div class="form-group">
-            <button id="saveShippingBtn" class="save-btn">💾 Save Shipping</button>
-          </div>
-        </div>
-        <div id="shippingMessage" class="message"></div>
-        <div id="shippingAdminList" class="shipping-grid"></div>
-      </section>
-
-      <!-- ===== COMMENTS PANEL ===== -->
-      <section id="panel-comments" class="admin-panel">
-        <h1>💬 Comments</h1>
-        <div id="commentsAdminList" class="comments-grid"></div>
-      </section>
-
-      <!-- ===== SETTINGS PANEL ===== -->
-      <section id="panel-settings" class="admin-panel">
-        <h1>⚙️ Integration Settings</h1>
-        <div class="form-group">
-          <label>Firebase Config</label>
-          <textarea id="firebaseConfigBox" placeholder="Firebase config"></textarea>
-        </div>
-        <div class="form-group">
-          <label>EmailJS Config</label>
-          <textarea id="emailjsConfigBox" placeholder="EmailJS config"></textarea>
-        </div>
-        <div class="form-group">
-          <label>Google Sheets URL</label>
-          <textarea id="googleSheetsBox" placeholder="Google Sheets URL"></textarea>
-        </div>
-        <button id="saveIntegrationBtn" class="save-btn">💾 Save Settings</button>
-        <div id="settingsMessage" class="message"></div>
-        <p class="small-note">Paste your settings here if you want to edit them later.</p>
-      </section>
+            <!-- إعدادات الألوان -->
+            <div class="admin-card">
+                <h2>تخصيص الألوان</h2>
+                <div class="color-settings">
+                    <div class="form-group">
+                        <label>لون الخلفية الرئيسي</label>
+                        <input type="color" id="bgColor" value="#0a0a0a" onchange="updateTheme()">
+                    </div>
+                    <div class="form-group">
+                        <label>لون النص الرئيسي</label>
+                        <input type="color" id="textColor" value="#ffffff" onchange="updateTheme()">
+                    </div>
+                    <div class="form-group">
+                        <label>لون الأزرار</label>
+                        <input type="color" id="btnColor" value="#ffffff" onchange="updateTheme()">
+                    </div>
+                    <button class="btn btn-secondary" onclick="resetTheme()">إعادة الافتراضي</button>
+                </div>
+            </div>
+        </section>
     </main>
-  </div>
 
-  <script src="config.js"></script>
-  <script src="admin.js"></script>
+    <footer class="footer">
+        <div class="container">
+            <p>لوحة التحكم © 2026</p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAdminProducts();
+            loadThemeSettings();
+        });
+    </script>
 </body>
 </html>
