@@ -4,10 +4,8 @@
    العملة: الدينار الجزائري (د.ج)
    ======================================== */
 
-// ⚠️ ⚠️ ⚠️ استبدل هذه القيم بقيم مشروعك من Firebase Console
-// Project Settings → General → Your Apps → </> (Web)
 const firebaseConfig = {
-       apiKey: "AIzaSyBm-lTuPfHYDEK6jwhhhm3J0Hiy73GrR-g",
+    apiKey: "AIzaSyBm-lTuPfHYDEK6jwhhhm3J0Hiy73GrR-g",
     authDomain: "vision-5d2d8.firebaseapp.com",
     databaseURL: "https://vision-5d2d8-default-rtdb.firebaseio.com",
     projectId: "vision-5d2d8",
@@ -26,12 +24,6 @@ let currentOrderFilter = 'all';
 
 // ==================== تهيئة Firebase ====================
 function initFirebase() {
-    // تحقق من أن القيم تم استبدالها
-    if (firebaseConfig.apiKey === "YOUR_API_KEY") {
-        console.error("❌ لم تستبدل إعدادات Firebase في app.js!");
-        throw new Error("يرجى استبدال YOUR_API_KEY و باقي القيم في app.js بقيم مشروعك من Firebase Console");
-    }
-
     if (!firebase.apps.length) {
         firebase.initializeApp(firebaseConfig);
     }
@@ -41,25 +33,51 @@ function initFirebase() {
     console.log("✅ Firebase initialized successfully");
 }
 
-
 // ==================== تسجيل الدخول / الخروج ====================
 function loginAdmin(e) {
     e.preventDefault();
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value;
     const btn = document.getElementById('loginBtn');
-    
-    btn.disabled = true;
-    btn.textContent = 'جاري الدخول...';
-    
+    const errorEl = document.getElementById('loginError');
+
+    if (!email || !password) {
+        if (errorEl) {
+            errorEl.textContent = 'يرجى ملء جميع الحقول';
+            errorEl.classList.add('show');
+        }
+        return;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'جاري الدخول...';
+    }
+    if (errorEl) errorEl.classList.remove('show');
+
     auth.signInWithEmailAndPassword(email, password)
         .then(() => {
-            window.location.href = 'admin.html';
+            window.location.replace('admin.html');
         })
         .catch(err => {
-            showToast('خطأ في البريد أو كلمة المرور', 'error');
-            btn.disabled = false;
-            btn.textContent = 'دخول';
+            console.error('Login error:', err);
+            let msg = 'خطأ في البريد أو كلمة المرور';
+            if (err.code === 'auth/invalid-api-key') msg = '⚠️ مفتاح Firebase API غير صحيح';
+            else if (err.code === 'auth/user-not-found') msg = 'هذا البريد غير مسجل';
+            else if (err.code === 'auth/wrong-password') msg = 'كلمة المرور خاطئة';
+            else if (err.code === 'auth/invalid-email') msg = 'البريد الإلكتروني غير صالح';
+            else if (err.code === 'auth/too-many-requests') msg = 'تم حظر المحاولات مؤقتاً';
+            else if (err.code === 'auth/network-request-failed') msg = 'مشكلة في الاتصال بالإنترنت';
+            else if (err.code === 'auth/configuration-not-found') msg = '⚠️ لم تُفعّل Email/Password في Firebase Authentication';
+            
+            if (errorEl) {
+                errorEl.textContent = msg;
+                errorEl.classList.add('show');
+            }
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'دخول';
+            }
         });
 }
 
@@ -324,16 +342,11 @@ async function handleCheckout(e) {
     };
     
     try {
-        // حفظ في Firestore
         await db.collection('orders').doc(orderData.orderId).set(orderData);
         
-        // إرسال بريد
         sendEmail(orderData);
-        
-        // إرسال لـ Google Sheets
         sendToGoogleSheets(orderData);
         
-        // تفريغ السلة
         saveCart([]);
         updateCartCount();
         
@@ -981,24 +994,34 @@ function resetSliderForm() {
 // ==================== الإعدادات والألوان ====================
 function loadSettings() {
     const settings = JSON.parse(localStorage.getItem('store_settings') || '{}');
-    document.getElementById('emailjsKey').value = settings.emailjs_key || '';
-    document.getElementById('emailjsService').value = settings.emailjs_service || '';
-    document.getElementById('emailjsTemplate').value = settings.emailjs_template || '';
-    document.getElementById('sheetsUrl').value = settings.sheets_url || '';
+    const elKey = document.getElementById('emailjsKey');
+    const elService = document.getElementById('emailjsService');
+    const elTemplate = document.getElementById('emailjsTemplate');
+    const elSheets = document.getElementById('sheetsUrl');
+    
+    if (elKey) elKey.value = settings.emailjs_key || '';
+    if (elService) elService.value = settings.emailjs_service || '';
+    if (elTemplate) elTemplate.value = settings.emailjs_template || '';
+    if (elSheets) elSheets.value = settings.sheets_url || '';
     
     const theme = JSON.parse(localStorage.getItem('store_theme') || '{}');
-    if (theme.bg) document.getElementById('bgColor').value = theme.bg;
-    if (theme.text) document.getElementById('textColor').value = theme.text;
-    if (theme.btn) document.getElementById('btnColor').value = theme.btn;
-    if (theme.bgSecondary) document.getElementById('bgSecondary').value = theme.bgSecondary;
+    const elBg = document.getElementById('bgColor');
+    const elText = document.getElementById('textColor');
+    const elBtn = document.getElementById('btnColor');
+    const elBgSec = document.getElementById('bgSecondary');
+    
+    if (theme.bg && elBg) elBg.value = theme.bg;
+    if (theme.text && elText) elText.value = theme.text;
+    if (theme.btn && elBtn) elBtn.value = theme.btn;
+    if (theme.bgSecondary && elBgSec) elBgSec.value = theme.bgSecondary;
 }
 
 function saveSettings() {
     const settings = {
-        emailjs_key: document.getElementById('emailjsKey').value.trim(),
-        emailjs_service: document.getElementById('emailjsService').value.trim(),
-        emailjs_template: document.getElementById('emailjsTemplate').value.trim(),
-        sheets_url: document.getElementById('sheetsUrl').value.trim()
+        emailjs_key: document.getElementById('emailjsKey')?.value.trim() || '',
+        emailjs_service: document.getElementById('emailjsService')?.value.trim() || '',
+        emailjs_template: document.getElementById('emailjsTemplate')?.value.trim() || '',
+        sheets_url: document.getElementById('sheetsUrl')?.value.trim() || ''
     };
     localStorage.setItem('store_settings', JSON.stringify(settings));
     showToast('تم حفظ الإعدادات', 'success');
@@ -1018,10 +1041,10 @@ function updateTheme() {
 
 function saveTheme() {
     const theme = {
-        bg: document.getElementById('bgColor').value,
-        text: document.getElementById('textColor').value,
-        btn: document.getElementById('btnColor').value,
-        bgSecondary: document.getElementById('bgSecondary').value
+        bg: document.getElementById('bgColor')?.value || '#0a0a0a',
+        text: document.getElementById('textColor')?.value || '#ffffff',
+        btn: document.getElementById('btnColor')?.value || '#ffffff',
+        bgSecondary: document.getElementById('bgSecondary')?.value || '#111111'
     };
     localStorage.setItem('store_theme', JSON.stringify(theme));
     showToast('تم حفظ الألوان', 'success');
@@ -1029,10 +1052,16 @@ function saveTheme() {
 
 function resetTheme() {
     const defaults = { bg: '#0a0a0a', text: '#ffffff', btn: '#ffffff', bgSecondary: '#111111' };
-    document.getElementById('bgColor').value = defaults.bg;
-    document.getElementById('textColor').value = defaults.text;
-    document.getElementById('btnColor').value = defaults.btn;
-    document.getElementById('bgSecondary').value = defaults.bgSecondary;
+    const elBg = document.getElementById('bgColor');
+    const elText = document.getElementById('textColor');
+    const elBtn = document.getElementById('btnColor');
+    const elBgSec = document.getElementById('bgSecondary');
+    
+    if (elBg) elBg.value = defaults.bg;
+    if (elText) elText.value = defaults.text;
+    if (elBtn) elBtn.value = defaults.btn;
+    if (elBgSec) elBgSec.value = defaults.bgSecondary;
+    
     updateTheme();
     localStorage.setItem('store_theme', JSON.stringify(defaults));
     showToast('تمت إعادة الألوان الافتراضية', 'success');
