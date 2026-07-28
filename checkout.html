@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>إتمام الطلب | متجرك</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -22,31 +21,16 @@
     <main class="container">
         <section class="checkout-section">
             <h1>إتمام الطلب</h1>
-            
             <div class="checkout-grid">
-                <!-- السلة -->
                 <div class="checkout-cart">
                     <h2>منتجاتك</h2>
-                    <div id="cartItems">
-                        <!-- تُعرض ديناميكياً -->
-                    </div>
+                    <div id="cartItems"></div>
                     <div class="cart-summary">
-                        <div class="summary-row">
-                            <span>المجموع</span>
-                            <span id="subtotal">0 ريال</span>
-                        </div>
-                        <div class="summary-row">
-                            <span>الشحن</span>
-                            <span>مجاني</span>
-                        </div>
-                        <div class="summary-row total">
-                            <span>الإجمالي</span>
-                            <span id="totalPrice">0 ريال</span>
-                        </div>
+                        <div class="summary-row"><span>المجموع</span><span id="subtotal">0 ريال</span></div>
+                        <div class="summary-row"><span>الشحن</span><span>مجاني</span></div>
+                        <div class="summary-row total"><span>الإجمالي</span><span id="totalPrice">0 ريال</span></div>
                     </div>
                 </div>
-
-                <!-- نموذج الطلب -->
                 <div class="checkout-form">
                     <h2>معلومات التوصيل</h2>
                     <form id="checkoutForm" onsubmit="handleCheckout(event)">
@@ -76,9 +60,7 @@
                             <label>ملاحظات إضافية</label>
                             <textarea id="orderNotes" rows="2" placeholder="أي ملاحظات خاصة بالطلب..."></textarea>
                         </div>
-                        <button type="submit" class="btn btn-primary btn-block" id="submitOrder">
-                            تأكيد الطلب
-                        </button>
+                        <button type="submit" class="btn btn-primary btn-block" id="submitOrder">تأكيد الطلب</button>
                     </form>
                 </div>
             </div>
@@ -91,12 +73,13 @@
         </div>
     </footer>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="app.js"></script>
     <script>
-        // تهيئة EmailJS - استبدل بمفاتيحك
-        emailjs.init("YOUR_PUBLIC_KEY");
-
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            await initDatabase();
+            loadTheme();
             displayCart();
             updateCartCount();
         });
