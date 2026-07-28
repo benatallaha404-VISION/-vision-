@@ -4,7 +4,8 @@
    العملة: الدينار الجزائري (د.ج)
    ======================================== */
 
-// ⚠️ استبدل هذه القيم بقيم مشروعك من Firebase Console
+// ⚠️ ⚠️ ⚠️ استبدل هذه القيم بقيم مشروعك من Firebase Console
+// Project Settings → General → Your Apps → </> (Web)
 const firebaseConfig = {
     apiKey: "YOUR_API_KEY",
     authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
@@ -14,7 +15,9 @@ const firebaseConfig = {
     appId: "YOUR_APP_ID"
 };
 
-let db, auth, storage;
+let db = null;
+let auth = null;
+let storage = null;
 let currentQty = 1;
 let sliderInterval = null;
 let currentSlide = 0;
@@ -22,13 +25,21 @@ let currentOrderFilter = 'all';
 
 // ==================== تهيئة Firebase ====================
 function initFirebase() {
+    // تحقق من أن القيم تم استبدالها
+    if (firebaseConfig.apiKey === "YOUR_API_KEY") {
+        console.error("❌ لم تستبدل إعدادات Firebase في app.js!");
+        throw new Error("يرجى استبدال YOUR_API_KEY و باقي القيم في app.js بقيم مشروعك من Firebase Console");
+    }
+
     if (!firebase.apps.length) {
         firebase.initializeApp(firebaseConfig);
     }
     db = firebase.firestore();
     auth = firebase.auth();
     storage = firebase.storage();
+    console.log("✅ Firebase initialized successfully");
 }
+
 
 // ==================== تسجيل الدخول / الخروج ====================
 function loginAdmin(e) {
