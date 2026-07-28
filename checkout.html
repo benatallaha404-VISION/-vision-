@@ -26,40 +26,22 @@
                     <h2>منتجاتك</h2>
                     <div id="cartItems"></div>
                     <div class="cart-summary">
-                        <div class="summary-row"><span>المجموع</span><span id="subtotal">0 ريال</span></div>
+                        <div class="summary-row"><span>المجموع</span><span id="subtotal">0 د.ج</span></div>
                         <div class="summary-row"><span>الشحن</span><span>مجاني</span></div>
-                        <div class="summary-row total"><span>الإجمالي</span><span id="totalPrice">0 ريال</span></div>
+                        <div class="summary-row total"><span>الإجمالي</span><span id="totalPrice">0 د.ج</span></div>
                     </div>
                 </div>
                 <div class="checkout-form">
                     <h2>معلومات التوصيل</h2>
                     <form id="checkoutForm" onsubmit="handleCheckout(event)">
-                        <div class="form-group">
-                            <label>الاسم الكامل *</label>
-                            <input type="text" id="customerName" required placeholder="محمد أحمد">
-                        </div>
+                        <div class="form-group"><label>الاسم الكامل *</label><input type="text" id="customerName" required></div>
                         <div class="form-row">
-                            <div class="form-group">
-                                <label>رقم الجوال *</label>
-                                <input type="tel" id="customerPhone" required placeholder="05xxxxxxxx">
-                            </div>
-                            <div class="form-group">
-                                <label>البريد الإلكتروني *</label>
-                                <input type="email" id="customerEmail" required placeholder="example@email.com">
-                            </div>
+                            <div class="form-group"><label>رقم الجوال *</label><input type="tel" id="customerPhone" required></div>
+                            <div class="form-group"><label>البريد الإلكتروني *</label><input type="email" id="customerEmail" required></div>
                         </div>
-                        <div class="form-group">
-                            <label>المدينة *</label>
-                            <input type="text" id="customerCity" required placeholder="الرياض">
-                        </div>
-                        <div class="form-group">
-                            <label>العنوان التفصيلي *</label>
-                            <textarea id="customerAddress" rows="3" required placeholder="حي... شارع... رقم البناء..."></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label>ملاحظات إضافية</label>
-                            <textarea id="orderNotes" rows="2" placeholder="أي ملاحظات خاصة بالطلب..."></textarea>
-                        </div>
+                        <div class="form-group"><label>المدينة *</label><input type="text" id="customerCity" required></div>
+                        <div class="form-group"><label>العنوان التفصيلي *</label><textarea id="customerAddress" rows="3" required></textarea></div>
+                        <div class="form-group"><label>ملاحظات إضافية</label><textarea id="orderNotes" rows="2"></textarea></div>
                         <button type="submit" class="btn btn-primary btn-block" id="submitOrder">تأكيد الطلب</button>
                     </form>
                 </div>
@@ -68,17 +50,20 @@
     </main>
 
     <footer class="footer">
-        <div class="container">
+        <div class="container" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
             <p>متجرك © 2026</p>
+            <a href="login.html" style="color:var(--text-muted);text-decoration:none;font-size:0.85rem;">🔒 إدارة المتجر</a>
         </div>
     </footer>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="app.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            await initDatabase();
+        document.addEventListener('DOMContentLoaded', () => {
+            initFirebase();
             loadTheme();
             displayCart();
             updateCartCount();
