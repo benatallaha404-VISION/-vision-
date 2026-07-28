@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- شريط التنقل -->
     <nav class="navbar">
         <div class="container nav-content">
             <a href="index.html" class="logo">متجرك</a>
@@ -30,44 +29,44 @@
         </div>
     </nav>
 
-    <!-- المحتوى -->
-    <main class="container">
-        <section class="hero">
-            <h1>تشكيلة مميزة</h1>
-            <p>أفضل المنتجات بأجود الخامات</p>
+    <main>
+        <!-- السلايدر -->
+        <section class="slider-section" id="sliderSection">
+            <div class="slider-container" id="sliderContainer">
+                <!-- يُعرض ديناميكياً -->
+            </div>
+            <div class="slider-dots" id="sliderDots"></div>
         </section>
 
-        <section class="products-section">
+        <section class="container products-section">
             <div class="section-header">
                 <h2>جميع المنتجات</h2>
                 <p id="productsCount">جاري التحميل...</p>
             </div>
-            <div class="products-grid" id="productsGrid">
-                <!-- المنتجات تُعرض هنا -->
-            </div>
+            <div class="products-grid" id="productsGrid"></div>
             <div class="empty-state" id="emptyState" style="display:none;">
                 <p>لا توجد منتجات حالياً</p>
-                <a href="admin.html" class="btn btn-primary">أضف أول منتج</a>
+                <a href="admin.html" class="btn btn-primary">أضف أول منتج من الداشبورد</a>
             </div>
         </section>
     </main>
 
-    <!-- فوتر -->
     <footer class="footer">
         <div class="container">
             <p>متجرك © 2026 - جميع الحقوق محفوظة</p>
         </div>
     </footer>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
     <script src="app.js"></script>
     <script>
-        // عرض المنتجات عند تحميل الصفحة
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            await initDatabase();
+            loadTheme();
+            renderSlider();
             displayProducts();
             updateCartCount();
         });
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
-
 </body>
 </html>
