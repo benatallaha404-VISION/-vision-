@@ -1,48 +1,105 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Checkout</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-  
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إتمام الطلب | متجرك</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container checkout-wrap">
-    <a href="index.html" class="back-link">← Back to store</a>
-    <h1>Checkout</h1>
-    <div id="checkoutProductInfo"></div>
-    <form id="checkoutForm">
-      <div class="form-row">
-        <div class="form-group"><label>Full Name *</label><input type="text" id="fullName" required /></div>
-        <div class="form-group"><label>Phone *</label><input type="tel" id="phone" required /></div>
-      </div>
-      <div class="form-group"><label>Email</label><input type="email" id="email" /></div>
-      <div class="form-row">
-        <div class="form-group"><label>Order Type</label><select id="orderType"><option value="buy">Buy</option><option value="rent">Rent</option></select></div>
-        <div class="form-group"><label>State *</label><select id="state" required><option value="">Select state</option></select></div>
-      </div>
-      <div class="form-row">
-        <div class="form-group"><label>Delivery Method</label><select id="deliveryMethod"><option value="home">Home delivery</option><option value="shipping">Shipping company</option></select></div>
-        <div class="form-group"><label>Payment Method</label><select id="paymentMethod"><option value="cash">Cash on delivery</option><option value="card">Bank card</option><option value="ccp">CCP</option></select></div>
-      </div>
-      <div class="form-group"><label>Address *</label><input type="text" id="address" required /></div>
-      <div class="form-group"><label>Additional Note</label><textarea id="note"></textarea></div>
-      <div class="form-row">
-        <div class="form-group"><label>Transaction Number</label><input type="text" id="transactionNumber" /></div>
-        <div class="form-group"><label>Coupon Code</label><input type="text" id="couponCode" /></div>
-      </div>
-      <button type="submit" class="submit-btn">Confirm Order</button>
-    </form>
-    <div id="checkoutResult"></div>
-  </div>
+    <nav class="navbar">
+        <div class="container nav-content">
+            <a href="index.html" class="logo">متجرك</a>
+            <div class="nav-links">
+                <a href="index.html">الرئيسية</a>
+                <a href="checkout.html" class="active">السلة</a>
+            </div>
+        </div>
+    </nav>
 
-  <script src="config.js"></script>
-  <script src="checkout.js"></script>
+    <main class="container">
+        <section class="checkout-section">
+            <h1>إتمام الطلب</h1>
+            
+            <div class="checkout-grid">
+                <!-- السلة -->
+                <div class="checkout-cart">
+                    <h2>منتجاتك</h2>
+                    <div id="cartItems">
+                        <!-- تُعرض ديناميكياً -->
+                    </div>
+                    <div class="cart-summary">
+                        <div class="summary-row">
+                            <span>المجموع</span>
+                            <span id="subtotal">0 ريال</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>الشحن</span>
+                            <span>مجاني</span>
+                        </div>
+                        <div class="summary-row total">
+                            <span>الإجمالي</span>
+                            <span id="totalPrice">0 ريال</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- نموذج الطلب -->
+                <div class="checkout-form">
+                    <h2>معلومات التوصيل</h2>
+                    <form id="checkoutForm" onsubmit="handleCheckout(event)">
+                        <div class="form-group">
+                            <label>الاسم الكامل *</label>
+                            <input type="text" id="customerName" required placeholder="محمد أحمد">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>رقم الجوال *</label>
+                                <input type="tel" id="customerPhone" required placeholder="05xxxxxxxx">
+                            </div>
+                            <div class="form-group">
+                                <label>البريد الإلكتروني *</label>
+                                <input type="email" id="customerEmail" required placeholder="example@email.com">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>المدينة *</label>
+                            <input type="text" id="customerCity" required placeholder="الرياض">
+                        </div>
+                        <div class="form-group">
+                            <label>العنوان التفصيلي *</label>
+                            <textarea id="customerAddress" rows="3" required placeholder="حي... شارع... رقم البناء..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>ملاحظات إضافية</label>
+                            <textarea id="orderNotes" rows="2" placeholder="أي ملاحظات خاصة بالطلب..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block" id="submitOrder">
+                            تأكيد الطلب
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>متجرك © 2026</p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+    <script>
+        // تهيئة EmailJS - استبدل بمفاتيحك
+        emailjs.init("YOUR_PUBLIC_KEY");
+
+        document.addEventListener('DOMContentLoaded', () => {
+            displayCart();
+            updateCartCount();
+        });
+    </script>
 </body>
 </html>
