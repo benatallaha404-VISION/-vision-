@@ -1,25 +1,44 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Product Details</title>
-  <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-  
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تفاصيل المنتج | متجرك</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="container product-page">
-    <a href="index.html" class="back-link">← Back to store</a>
-    <div id="productDetails"></div>
-    <div id="commentsSection" class="section"></div>
-  </div>
+    <nav class="navbar">
+        <div class="container nav-content">
+            <a href="index.html" class="logo">متجرك</a>
+            <div class="nav-links">
+                <a href="index.html">الرئيسية</a>
+                <a href="checkout.html" class="cart-link">
+                    السلة
+                    <span class="cart-count" id="cartCount">0</span>
+                </a>
+            </div>
+        </div>
+    </nav>
 
-  <script src="config.js"></script>
-  <script src="product.js"></script>
+    <main class="container">
+        <div class="product-detail" id="productDetail">
+            <!-- تُعرض ديناميكياً -->
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>متجرك © 2026</p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            displayProductDetail();
+            updateCartCount();
+        });
+    </script>
 </body>
 </html>
