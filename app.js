@@ -3,7 +3,7 @@
    ======================================== */
 
 const SUPABASE_URL = "https://jeixaxbcqytzbdsksdol.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_..."; // ← ضع مفتاحك هنا
+const SUPABASE_ANON_KEY = "sb_publishable_Awnjggbx9XZUWulYBtfLyg__WYkbPje"; // ← ضع مفتاحك هنا
 
 let supabase = null;
 let currentQty = 1;
