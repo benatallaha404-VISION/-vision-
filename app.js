@@ -4,7 +4,7 @@
    ======================================== */
 
 // ⚠️ استبدل هذين بقيم مشروعك من Supabase Dashboard → Project Settings → API
-const SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
+const SUPABASE_URL = "https://jeixaxbcqytzbdsksdol.supabase.co";
 const SUPABASE_ANON_KEY = "YOUR_ANON_KEY";
 
 let supabase = null;
