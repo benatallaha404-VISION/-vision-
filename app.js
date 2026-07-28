@@ -7,12 +7,13 @@
 // ⚠️ ⚠️ ⚠️ استبدل هذه القيم بقيم مشروعك من Firebase Console
 // Project Settings → General → Your Apps → </> (Web)
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+       apiKey: "AIzaSyBm-lTuPfHYDEK6jwhhhm3J0Hiy73GrR-g",
+    authDomain: "vision-5d2d8.firebaseapp.com",
+    databaseURL: "https://vision-5d2d8-default-rtdb.firebaseio.com",
+    projectId: "vision-5d2d8",
+    storageBucket: "vision-5d2d8.firebasestorage.app",
+    messagingSenderId: "840448843688",
+    appId: "1:840448843688:web:80c3ae799d6797ac57c79d"
 };
 
 let db = null;
