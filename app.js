@@ -1,11 +1,9 @@
 /* ========================================
-   متجرك - Supabase Edition
-   العملة: الدينار الجزائري (د.ج)
+   متجرك - Supabase Complete
    ======================================== */
 
-// ⚠️ استبدل هذين بقيم مشروعك من Supabase Dashboard → Project Settings → API
 const SUPABASE_URL = "https://jeixaxbcqytzbdsksdol.supabase.co";
-const SUPABASE_ANON_KEY = "sb_secret_1vSOdCeI3Yi-SydF36eDSw_IQnpY8ik";
+const SUPABASE_ANON_KEY = "sb_publishable_..."; // ← ضع مفتاحك هنا
 
 let supabase = null;
 let currentQty = 1;
@@ -14,18 +12,14 @@ let currentSlide = 0;
 let currentOrderFilter = 'all';
 
 function initSupabase() {
-    if (!window.supabase) {
-        throw new Error('مكتبة Supabase لم تُحمل. تأكد من وضع <script> قبل app.js');
-    }
-    if (SUPABASE_URL.includes('YOUR_PROJECT')) {
-        throw new Error('استبدل YOUR_PROJECT في SUPABASE_URL بقيمة حقيقية من Supabase');
-    }
+    if (!window.supabase) { console.error('❌ Supabase library not loaded'); return; }
     supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log("✅ Supabase connected");
+    console.log("✅ Supabase ready");
 }
 
-async function logoutAdmin() {
-    await supabase.auth.signOut();
+function logoutAdmin() {
+    sessionStorage.removeItem('admin_logged_in');
+    sessionStorage.removeItem('admin_email');
     window.location.href = 'login.html';
 }
 
@@ -33,7 +27,7 @@ async function uploadImage(file, folder) {
     if (!file) return null;
     const fileName = `${folder}/${Date.now()}_${file.name}`;
     const { error } = await supabase.storage.from('images').upload(fileName, file);
-    if (error) { console.error(error); return null; }
+    if (error) { console.error(error); showToast('فشل رفع الصورة', 'error'); return null; }
     const { data } = supabase.storage.from('images').getPublicUrl(fileName);
     return data.publicUrl;
 }
@@ -47,19 +41,17 @@ function previewImage(input, previewId) {
     }
 }
 
+/* ====== المنتجات (الموقع) ====== */
 async function displayProducts() {
     const grid = document.getElementById('productsGrid');
     const emptyState = document.getElementById('emptyState');
     const countEl = document.getElementById('productsCount');
     if (!grid) return;
     const query = document.getElementById('searchInput')?.value.toLowerCase() || '';
-    
     const { data: products, error } = await supabase.from('products').select('*').order('created_at', { ascending: false });
     if (error) { console.error(error); return; }
-    
     let filtered = products || [];
     if (query) filtered = filtered.filter(p => p.name.toLowerCase().includes(query) || (p.category && p.category.toLowerCase().includes(query)));
-    
     if (filtered.length === 0) {
         grid.innerHTML = '';
         if (emptyState) emptyState.style.display = 'block';
@@ -68,7 +60,6 @@ async function displayProducts() {
     }
     if (emptyState) emptyState.style.display = 'none';
     if (countEl) countEl.textContent = `${filtered.length} منتج`;
-    
     grid.innerHTML = filtered.map(p => `
         <div class="product-card" onclick="goToProduct(${p.id})">
             <img src="${p.image || 'https://via.placeholder.com/400x400/1a1a1a/666?text=No+Image'}" alt="${p.name}" class="product-image" onerror="this.src='https://via.placeholder.com/400x400/1a1a1a/666?text=No+Image'">
@@ -92,7 +83,6 @@ async function displayProductDetail() {
     if (!container) return;
     const urlParams = new URLSearchParams(window.location.search);
     const productId = urlParams.get('id');
-    
     const { data: p, error } = await supabase.from('products').select('*').eq('id', productId).single();
     if (error || !p) {
         container.innerHTML = `<div class="empty-state"><p>المنتج غير موجود</p><a href="index.html" class="btn btn-primary">العودة للرئيسية</a></div>`;
@@ -127,14 +117,16 @@ function changeQty(delta) {
 }
 function getQty() { return currentQty; }
 
+/* ====== السلة ====== */
 function getCart() { return JSON.parse(localStorage.getItem('store_cart')) || []; }
 function saveCart(cart) { localStorage.setItem('store_cart', JSON.stringify(cart)); }
 
-async function addToCart(productId, quantity = 1) {
+async function addToCart(productId, quantity) {
+    quantity = quantity || 1;
     const { data: product, error } = await supabase.from('products').select('*').eq('id', productId).single();
     if (error || !product) return;
     let cart = getCart();
-    const existing = cart.find(item => item.id === productId);
+    const existing = cart.find(item => item.id == productId);
     if (existing) existing.quantity += quantity;
     else cart.push({ id: productId, name: product.name, price: product.price, image: product.image, quantity });
     saveCart(cart);
@@ -186,6 +178,7 @@ function removeFromCart(productId) {
     showToast('تم الحذف من السلة', 'success');
 }
 
+/* ====== إتمام الطلب ====== */
 async function handleCheckout(e) {
     e.preventDefault();
     const cart = getCart();
@@ -193,7 +186,6 @@ async function handleCheckout(e) {
     const btn = document.getElementById('submitOrder');
     btn.disabled = true;
     btn.textContent = 'جاري إرسال الطلب...';
-    
     const orderData = {
         order_id: 'ORD-' + Date.now(),
         customer_name: document.getElementById('customerName').value.trim(),
@@ -206,7 +198,6 @@ async function handleCheckout(e) {
         total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
         status: 'pending'
     };
-    
     const { error } = await supabase.from('orders').insert([orderData]);
     if (error) {
         console.error(error);
@@ -258,13 +249,16 @@ function sendToGoogleSheets(orderData) {
     });
 }
 
+/* ====== لوحة التحكم ====== */
 function showSection(sectionId, linkEl) {
     document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
-    document.getElementById('sec-' + sectionId)?.classList.add('active');
+    const sec = document.getElementById('sec-' + sectionId);
+    if (sec) sec.classList.add('active');
     document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
     if (linkEl) linkEl.classList.add('active');
     const titles = { dashboard: 'لوحة المعلومات', products: 'إدارة المنتجات', orders: 'إدارة الطلبات', earnings: 'الأرباح', slider: 'إدارة السلايدر', settings: 'الإعدادات' };
-    document.getElementById('pageTitle').textContent = titles[sectionId] || '';
+    const titleEl = document.getElementById('pageTitle');
+    if (titleEl) titleEl.textContent = titles[sectionId] || '';
     if (sectionId === 'dashboard') loadDashboard();
     if (sectionId === 'products') loadAdminProducts();
     if (sectionId === 'orders') loadOrders('all');
@@ -273,8 +267,12 @@ function showSection(sectionId, linkEl) {
     if (sectionId === 'settings') loadSettings();
 }
 
-function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) sidebar.classList.toggle('open');
+}
 
+/* ====== Dashboard ====== */
 async function loadDashboard() {
     const { data: products } = await supabase.from('products').select('id');
     const { data: orders } = await supabase.from('orders').select('*');
@@ -284,14 +282,18 @@ async function loadDashboard() {
     const completed = allOrders.filter(o => o.status === 'completed');
     const totalEarnings = completed.reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0);
     
-    document.getElementById('statProducts').textContent = productsCount;
-    document.getElementById('statOrders').textContent = allOrders.length;
-    document.getElementById('statPending').textContent = pending;
-    document.getElementById('statEarnings').textContent = totalEarnings.toFixed(2) + ' د.ج';
+    const statProd = document.getElementById('statProducts');
+    const statOrd = document.getElementById('statOrders');
+    const statPen = document.getElementById('statPending');
+    const statEarn = document.getElementById('statEarnings');
+    if (statProd) statProd.textContent = productsCount;
+    if (statOrd) statOrd.textContent = allOrders.length;
+    if (statPen) statPen.textContent = pending;
+    if (statEarn) statEarn.textContent = totalEarnings.toFixed(2) + ' د.ج';
     
     const tbody = document.getElementById('recentOrdersTable');
     if (!tbody) return;
-    const recent = allOrders.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 5);
+    const recent = allOrders.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)).slice(0, 5);
     if (recent.length === 0) {
         tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:32px;">لا توجد طلبات بعد</td></tr>';
         return;
@@ -304,6 +306,7 @@ async function loadDashboard() {
     }).join('');
 }
 
+/* ====== المنتجات في الأدمن ====== */
 async function loadAdminProducts() {
     const tbody = document.getElementById('productsTable');
     const badge = document.getElementById('totalProductsBadge');
@@ -352,10 +355,12 @@ async function handleProductSubmit(e) {
     
     if (id) {
         const { error } = await supabase.from('products').update(data).eq('id', id);
-        if (!error) showToast('تم تعديل المنتج بنجاح', 'success');
+        if (error) { console.error(error); showToast('حدث خطأ في التعديل', 'error'); }
+        else showToast('تم تعديل المنتج بنجاح', 'success');
     } else {
         const { error } = await supabase.from('products').insert([data]);
-        if (!error) showToast('تمت إضافة المنتج بنجاح', 'success');
+        if (error) { console.error(error); showToast('حدث خطأ في الإضافة', 'error'); }
+        else showToast('تمت إضافة المنتج بنجاح', 'success');
     }
     loadAdminProducts();
     resetProductForm();
@@ -397,6 +402,7 @@ function resetProductForm() {
     document.getElementById('cancelBtn').style.display = 'none';
 }
 
+/* ====== الطلبات ====== */
 async function loadOrders(status) {
     currentOrderFilter = status;
     const tbody = document.getElementById('ordersTable');
@@ -452,6 +458,7 @@ async function changeOrderStatus(orderId, status) {
     loadEarnings();
 }
 
+/* ====== الأرباح ====== */
 async function loadEarnings() {
     const { data: completed } = await supabase.from('orders').select('*').eq('status', 'completed');
     const orders = completed || [];
@@ -464,9 +471,12 @@ async function loadEarnings() {
     });
     const monthEarnings = monthOrders.reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0);
     
-    document.getElementById('totalEarnings').textContent = totalEarnings.toFixed(2) + ' د.ج';
-    document.getElementById('monthEarnings').textContent = monthEarnings.toFixed(2) + ' د.ج';
-    document.getElementById('completedOrders').textContent = orders.length;
+    const totalEl = document.getElementById('totalEarnings');
+    const monthEl = document.getElementById('monthEarnings');
+    const compEl = document.getElementById('completedOrders');
+    if (totalEl) totalEl.textContent = totalEarnings.toFixed(2) + ' د.ج';
+    if (monthEl) monthEl.textContent = monthEarnings.toFixed(2) + ' د.ج';
+    if (compEl) compEl.textContent = orders.length;
     
     const tbody = document.getElementById('monthlyEarningsTable');
     if (!tbody) return;
@@ -489,6 +499,7 @@ async function loadEarnings() {
     `).join('');
 }
 
+/* ====== السلايدر ====== */
 async function renderSlider() {
     const container = document.getElementById('sliderContainer');
     const dotsContainer = document.getElementById('sliderDots');
@@ -627,12 +638,17 @@ function resetSliderForm() {
     document.getElementById('slideCancelBtn').style.display = 'none';
 }
 
+/* ====== الإعدادات والألوان ====== */
 function loadSettings() {
     const settings = JSON.parse(localStorage.getItem('store_settings') || '{}');
-    if (document.getElementById('emailjsKey')) document.getElementById('emailjsKey').value = settings.emailjs_key || '';
-    if (document.getElementById('emailjsService')) document.getElementById('emailjsService').value = settings.emailjs_service || '';
-    if (document.getElementById('emailjsTemplate')) document.getElementById('emailjsTemplate').value = settings.emailjs_template || '';
-    if (document.getElementById('sheetsUrl')) document.getElementById('sheetsUrl').value = settings.sheets_url || '';
+    const elKey = document.getElementById('emailjsKey');
+    const elService = document.getElementById('emailjsService');
+    const elTemplate = document.getElementById('emailjsTemplate');
+    const elSheets = document.getElementById('sheetsUrl');
+    if (elKey) elKey.value = settings.emailjs_key || '';
+    if (elService) elService.value = settings.emailjs_service || '';
+    if (elTemplate) elTemplate.value = settings.emailjs_template || '';
+    if (elSheets) elSheets.value = settings.sheets_url || '';
     const theme = JSON.parse(localStorage.getItem('store_theme') || '{}');
     if (theme.bg && document.getElementById('bgColor')) document.getElementById('bgColor').value = theme.bg;
     if (theme.text && document.getElementById('textColor')) document.getElementById('textColor').value = theme.text;
@@ -696,7 +712,7 @@ function showToast(message, type) {
     const existing = document.querySelector('.toast');
     if (existing) existing.remove();
     const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
+    toast.className = `toast ${type || 'success'}`;
     toast.textContent = message;
     document.body.appendChild(toast);
     setTimeout(() => toast.classList.add('show'), 10);
