@@ -24,9 +24,7 @@
         <div class="login-box">
             <h1>🔒 تسجيل دخول المشرف</h1>
             <p>أدخل بياناتك للوصول إلى لوحة التحكم</p>
-            
             <div class="login-error" id="loginError"></div>
-            
             <form id="loginForm">
                 <div class="form-group">
                     <label>البريد الإلكتروني</label>
@@ -42,76 +40,37 @@
         </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // تحقق من تهيئة Firebase
-            try {
-                initFirebase();
-                if (typeof auth === 'undefined' || !auth) {
-                    showLoginError('⚠️ خطأ في إعدادات Firebase. تأكد من ملء apiKey و projectId في app.js');
-                    return;
-                }
-            } catch (err) {
-                showLoginError('⚠️ فشل تهيئة Firebase: ' + err.message);
-                console.error(err);
-                return;
-            }
-
-            // إذا كان مسجل دخوله مسبقاً، أنقله للداشبورد
-            auth.onAuthStateChanged(user => {
-                if (user) {
-                    window.location.replace('admin.html');
-                }
+            initSupabase();
+            
+            supabase.auth.onAuthStateChange((event, session) => {
+                if (session) window.location.replace('admin.html');
             });
 
-            // ربط النموذج
-            document.getElementById('loginForm').addEventListener('submit', loginAdmin);
-        });
+            document.getElementById('loginForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('loginEmail').value.trim();
+                const password = document.getElementById('loginPassword').value;
+                const btn = document.getElementById('loginBtn');
+                const errorEl = document.getElementById('loginError');
 
-        function showLoginError(msg) {
-            const el = document.getElementById('loginError');
-            el.textContent = msg;
-            el.classList.add('show');
-        }
+                btn.disabled = true;
+                btn.textContent = 'جاري الدخول...';
+                errorEl.classList.remove('show');
 
-        function loginAdmin(e) {
-            e.preventDefault();
-            const email = document.getElementById('loginEmail').value.trim();
-            const password = document.getElementById('loginPassword').value;
-            const btn = document.getElementById('loginBtn');
-            const errorEl = document.getElementById('loginError');
-
-            if (!email || !password) {
-                showLoginError('يرجى ملء جميع الحقول');
-                return;
-            }
-
-            btn.disabled = true;
-            btn.textContent = 'جاري الدخول...';
-            errorEl.classList.remove('show');
-
-            auth.signInWithEmailAndPassword(email, password)
-                .then(() => {
-                    window.location.replace('admin.html');
-                })
-                .catch(err => {
-                    console.error('Login error:', err);
-                    let msg = 'خطأ في البريد أو كلمة المرور';
-                    if (err.code === 'auth/invalid-api-key') msg = '⚠️ مفتاح Firebase API غير صحيح. عدّل app.js';
-                    else if (err.code === 'auth/user-not-found') msg = 'هذا البريد غير مسجل';
-                    else if (err.code === 'auth/wrong-password') msg = 'كلمة المرور خاطئة';
-                    else if (err.code === 'auth/invalid-email') msg = 'البريد الإلكتروني غير صالح';
-                    else if (err.code === 'auth/too-many-requests') msg = 'تم حظر المحاولات مؤقتاً، حاول لاحقاً';
-                    else if (err.code === 'auth/network-request-failed') msg = 'مشكلة في الاتصال بالإنترنت';
-                    
-                    showLoginError(msg);
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                
+                if (error) {
+                    errorEl.textContent = 'خطأ في البريد أو كلمة المرور';
+                    errorEl.classList.add('show');
                     btn.disabled = false;
                     btn.textContent = 'دخول';
-                });
-        }
+                }
+            });
+        });
     </script>
 </body>
 </html>
