@@ -17,6 +17,16 @@
             display: none;
         }
         .login-error.show { display: block; }
+        .login-success {
+            background: rgba(0,204,102,0.1);
+            border-right: 3px solid var(--success);
+            color: var(--success);
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            display: none;
+        }
+        .login-success.show { display: block; }
     </style>
 </head>
 <body class="login-page">
@@ -24,7 +34,10 @@
         <div class="login-box">
             <h1>🔒 تسجيل دخول المشرف</h1>
             <p>أدخل بياناتك للوصول إلى لوحة التحكم</p>
+            
             <div class="login-error" id="loginError"></div>
+            <div class="login-success" id="loginSuccess"></div>
+            
             <form id="loginForm">
                 <div class="form-group">
                     <label>البريد الإلكتروني</label>
@@ -41,35 +54,66 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            initSupabase();
+        // ⚠️ استبدل هذين بقيم مشروعك
+        const SUPABASE_URL = "https://jeixaxbcqytzbdsksdol.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_Awnjggbx9XZUWulYBtfLyg__WYkbPje"; // ← ضع مفتاحك هنا
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const errorEl = document.getElementById('loginError');
+        const successEl = document.getElementById('loginSuccess');
+
+        // إذا كان مسجل دخوله مسبقاً، أنقله للداشبورد
+        supabaseClient.auth.getSession().then(({ data: { session } }) => {
+            if (session) {
+                window.location.replace('admin.html');
+            }
+        });
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
             
-            supabase.auth.onAuthStateChange((event, session) => {
-                if (session) window.location.replace('admin.html');
-            });
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            
+            errorEl.classList.remove('show');
+            successEl.classList.remove('show');
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'جاري الدخول...';
 
-            document.getElementById('loginForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = document.getElementById('loginEmail').value.trim();
-                const password = document.getElementById('loginPassword').value;
-                const btn = document.getElementById('loginBtn');
-                const errorEl = document.getElementById('loginError');
+            try {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
 
-                btn.disabled = true;
-                btn.textContent = 'جاري الدخول...';
-                errorEl.classList.remove('show');
-
-                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-                
                 if (error) {
-                    errorEl.textContent = 'خطأ في البريد أو كلمة المرور';
-                    errorEl.classList.add('show');
-                    btn.disabled = false;
-                    btn.textContent = 'دخول';
+                    throw error;
                 }
-            });
+
+                // ✅ نجاح! انتظر قليلاً ثم انقله
+                successEl.textContent = 'تم تسجيل الدخول بنجاح... جاري التحويل';
+                successEl.classList.add('show');
+                
+                setTimeout(() => {
+                    window.location.replace('admin.html');
+                }, 500);
+
+            } catch (err) {
+                console.error('Login error:', err);
+                let msg = 'خطأ في البريد أو كلمة المرور';
+                
+                if (err.message.includes('Invalid login')) msg = 'البريد أو كلمة المرور خاطئة';
+                else if (err.message.includes('Email not confirmed')) msg = 'يرجى تأكيد البريد الإلكتروني أولاً';
+                else if (err.message.includes('rate limit')) msg = 'محاولات كثيرة، حاول بعد دقيقة';
+                
+                errorEl.textContent = msg;
+                errorEl.classList.add('show');
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'دخول';
+            }
         });
     </script>
 </body>
