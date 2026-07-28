@@ -8,94 +8,43 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="admin-body">
-    <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <a href="index.html" class="logo">متجرك</a>
             <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
         </div>
         <nav class="sidebar-nav">
-            <a href="#" class="sidebar-link active" onclick="showSection('dashboard', this)">
-                <span>📊</span> لوحة المعلومات
-            </a>
-            <a href="#" class="sidebar-link" onclick="showSection('products', this)">
-                <span>📦</span> المنتجات
-            </a>
-            <a href="#" class="sidebar-link" onclick="showSection('orders', this)">
-                <span>🛒</span> الطلبات
-            </a>
-            <a href="#" class="sidebar-link" onclick="showSection('earnings', this)">
-                <span>💰</span> الأرباح
-            </a>
-            <a href="#" class="sidebar-link" onclick="showSection('slider', this)">
-                <span>🖼️</span> السلايدر
-            </a>
-            <a href="#" class="sidebar-link" onclick="showSection('settings', this)">
-                <span>⚙️</span> الإعدادات
-            </a>
+            <a href="#" class="sidebar-link active" onclick="showSection('dashboard', this)"><span>📊</span> لوحة المعلومات</a>
+            <a href="#" class="sidebar-link" onclick="showSection('products', this)"><span>📦</span> المنتجات</a>
+            <a href="#" class="sidebar-link" onclick="showSection('orders', this)"><span>🛒</span> الطلبات</a>
+            <a href="#" class="sidebar-link" onclick="showSection('earnings', this)"><span>💰</span> الأرباح</a>
+            <a href="#" class="sidebar-link" onclick="showSection('slider', this)"><span>🖼️</span> السلايدر</a>
+            <a href="#" class="sidebar-link" onclick="showSection('settings', this)"><span>⚙️</span> الإعدادات</a>
         </nav>
         <div class="sidebar-footer">
-            <a href="index.html" class="btn btn-secondary btn-block">عرض الموقع</a>
+            <button class="btn btn-danger btn-block" onclick="logoutAdmin()">🚪 تسجيل الخروج</button>
+            <a href="index.html" class="btn btn-secondary btn-block" style="margin-top:8px;">عرض الموقع</a>
         </div>
     </aside>
 
-    <!-- المحتوى -->
     <main class="admin-main">
         <header class="admin-topbar">
             <h1 id="pageTitle">لوحة المعلومات</h1>
-            <div class="admin-user">المشرف</div>
+            <div class="admin-user" id="adminEmail">المشرف</div>
         </header>
 
         <div class="admin-content">
             <!-- Dashboard -->
             <section id="sec-dashboard" class="admin-section active">
                 <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon">📦</div>
-                        <div class="stat-info">
-                            <h3 id="statProducts">0</h3>
-                            <p>إجمالي المنتجات</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">🛒</div>
-                        <div class="stat-info">
-                            <h3 id="statOrders">0</h3>
-                            <p>إجمالي الطلبات</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">⏳</div>
-                        <div class="stat-info">
-                            <h3 id="statPending">0</h3>
-                            <p>طلبات معلقة</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">💰</div>
-                        <div class="stat-info">
-                            <h3 id="statEarnings">0 ريال</h3>
-                            <p>إجمالي الأرباح</p>
-                        </div>
-                    </div>
+                    <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-info"><h3 id="statProducts">0</h3><p>إجمالي المنتجات</p></div></div>
+                    <div class="stat-card"><div class="stat-icon">🛒</div><div class="stat-info"><h3 id="statOrders">0</h3><p>إجمالي الطلبات</p></div></div>
+                    <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-info"><h3 id="statPending">0</h3><p>طلبات معلقة</p></div></div>
+                    <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-info"><h3 id="statEarnings">0 د.ج</h3><p>إجمالي الأرباح</p></div></div>
                 </div>
-                
                 <div class="admin-card" style="margin-top:32px;">
                     <h2>آخر الطلبات</h2>
-                    <div class="table-responsive">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>رقم الطلب</th>
-                                    <th>العميل</th>
-                                    <th>الإجمالي</th>
-                                    <th>الحالة</th>
-                                    <th>التاريخ</th>
-                                </tr>
-                            </thead>
-                            <tbody id="recentOrdersTable"></tbody>
-                        </table>
-                    </div>
+                    <div class="table-responsive"><table class="data-table"><thead><tr><th>رقم الطلب</th><th>العميل</th><th>الإجمالي</th><th>الحالة</th><th>التاريخ</th></tr></thead><tbody id="recentOrdersTable"></tbody></table></div>
                 </div>
             </section>
 
@@ -106,60 +55,29 @@
                     <form id="productForm" onsubmit="handleProductSubmit(event)">
                         <input type="hidden" id="productId">
                         <div class="form-row">
-                            <div class="form-group">
-                                <label>اسم المنتج *</label>
-                                <input type="text" id="productName" required placeholder="مثال: ساعة يد فاخرة">
-                            </div>
-                            <div class="form-group">
-                                <label>السعر (ريال) *</label>
-                                <input type="number" id="productPrice" required min="0" step="0.01" placeholder="199.00">
-                            </div>
+                            <div class="form-group"><label>اسم المنتج *</label><input type="text" id="productName" required></div>
+                            <div class="form-group"><label>السعر (د.ج) *</label><input type="number" id="productPrice" required min="0" step="0.01"></div>
                         </div>
                         <div class="form-row">
-                            <div class="form-group">
-                                <label>الفئة</label>
-                                <input type="text" id="productCategory" placeholder="مثال: إلكترونيات">
-                            </div>
-                            <div class="form-group">
-                                <label>الكمية المتوفرة</label>
-                                <input type="number" id="productStock" min="0" value="10">
-                            </div>
+                            <div class="form-group"><label>الفئة</label><input type="text" id="productCategory"></div>
+                            <div class="form-group"><label>الكمية المتوفرة</label><input type="number" id="productStock" min="0" value="10"></div>
                         </div>
                         <div class="form-group">
-                            <label>رابط الصورة</label>
-                            <input type="url" id="productImage" placeholder="https://example.com/image.jpg">
+                            <label>صورة المنتج</label>
+                            <input type="file" id="productImageFile" accept="image/*" onchange="previewImage(this, 'productPreview')">
+                            <img id="productPreview" style="display:none;max-width:200px;margin-top:12px;border:1px solid var(--border-color);">
+                            <input type="hidden" id="productImage">
                         </div>
-                        <div class="form-group">
-                            <label>وصف المنتج</label>
-                            <textarea id="productDesc" rows="3" placeholder="وصف تفصيلي للمنتج..."></textarea>
-                        </div>
+                        <div class="form-group"><label>وصف المنتج</label><textarea id="productDesc" rows="3"></textarea></div>
                         <div class="form-actions">
                             <button type="submit" class="btn btn-primary" id="submitBtn">إضافة المنتج</button>
                             <button type="button" class="btn btn-secondary" onclick="resetProductForm()" id="cancelBtn" style="display:none;">إلغاء</button>
                         </div>
                     </form>
                 </div>
-
                 <div class="admin-card">
-                    <div class="card-header">
-                        <h2>المنتجات المخزنة</h2>
-                        <span class="badge" id="totalProductsBadge">0 منتج</span>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>الصورة</th>
-                                    <th>الاسم</th>
-                                    <th>السعر</th>
-                                    <th>الكمية</th>
-                                    <th>الإجراءات</th>
-                                </tr>
-                            </thead>
-                            <tbody id="productsTable"></tbody>
-                        </table>
-                    </div>
+                    <div class="card-header"><h2>المنتجات المخزنة</h2><span class="badge" id="totalProductsBadge">0 منتج</span></div>
+                    <div class="table-responsive"><table class="data-table"><thead><tr><th>#</th><th>الصورة</th><th>الاسم</th><th>السعر</th><th>الكمية</th><th>الإجراءات</th></tr></thead><tbody id="productsTable"></tbody></table></div>
                 </div>
             </section>
 
@@ -176,67 +94,20 @@
                             <button class="filter-btn" onclick="filterOrders('returned')">مرتجع</button>
                         </div>
                     </div>
-                    <div class="table-responsive">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>رقم الطلب</th>
-                                    <th>العميل</th>
-                                    <th>الجوال</th>
-                                    <th>المنتجات</th>
-                                    <th>الإجمالي</th>
-                                    <th>الحالة</th>
-                                    <th>التاريخ</th>
-                                    <th>تغيير الحالة</th>
-                                </tr>
-                            </thead>
-                            <tbody id="ordersTable"></tbody>
-                        </table>
-                    </div>
+                    <div class="table-responsive"><table class="data-table"><thead><tr><th>رقم الطلب</th><th>العميل</th><th>الجوال</th><th>المنتجات</th><th>الإجمالي</th><th>الحالة</th><th>التاريخ</th><th>تغيير الحالة</th></tr></thead><tbody id="ordersTable"></tbody></table></div>
                 </div>
             </section>
 
             <!-- Earnings -->
             <section id="sec-earnings" class="admin-section">
                 <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon">💰</div>
-                        <div class="stat-info">
-                            <h3 id="totalEarnings">0 ريال</h3>
-                            <p>إجمالي الأرباح</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">📅</div>
-                        <div class="stat-info">
-                            <h3 id="monthEarnings">0 ريال</h3>
-                            <p>أرباح هذا الشهر</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">✅</div>
-                        <div class="stat-info">
-                            <h3 id="completedOrders">0</h3>
-                            <p>طلبات منفذة</p>
-                        </div>
-                    </div>
+                    <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-info"><h3 id="totalEarnings">0 د.ج</h3><p>إجمالي الأرباح</p></div></div>
+                    <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-info"><h3 id="monthEarnings">0 د.ج</h3><p>أرباح هذا الشهر</p></div></div>
+                    <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-info"><h3 id="completedOrders">0</h3><p>طلبات منفذة</p></div></div>
                 </div>
-
                 <div class="admin-card" style="margin-top:32px;">
                     <h2>الأرباح الشهرية</h2>
-                    <div class="table-responsive">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>الشهر</th>
-                                    <th>عدد الطلبات</th>
-                                    <th>إجمالي المبيعات</th>
-                                    <th>صافي الربح</th>
-                                </tr>
-                            </thead>
-                            <tbody id="monthlyEarningsTable"></tbody>
-                        </table>
-                    </div>
+                    <div class="table-responsive"><table class="data-table"><thead><tr><th>الشهر</th><th>عدد الطلبات</th><th>إجمالي المبيعات</th><th>صافي الربح</th></tr></thead><tbody id="monthlyEarningsTable"></tbody></table></div>
                 </div>
             </section>
 
@@ -247,36 +118,23 @@
                     <form id="sliderForm" onsubmit="handleSliderSubmit(event)">
                         <input type="hidden" id="slideId">
                         <div class="form-row">
-                            <div class="form-group">
-                                <label>عنوان السلايد *</label>
-                                <input type="text" id="slideTitle" required placeholder="عروض خاصة">
-                            </div>
-                            <div class="form-group">
-                                <label>الترتيب</label>
-                                <input type="number" id="slideOrder" min="1" value="1">
-                            </div>
+                            <div class="form-group"><label>عنوان السلايد *</label><input type="text" id="slideTitle" required></div>
+                            <div class="form-group"><label>الترتيب</label><input type="number" id="slideOrder" min="1" value="1"></div>
                         </div>
                         <div class="form-group">
-                            <label>رابط الصورة *</label>
-                            <input type="url" id="slideImage" required placeholder="https://example.com/banner.jpg">
+                            <label>صورة السلايد *</label>
+                            <input type="file" id="slideImageFile" accept="image/*" onchange="previewImage(this, 'slidePreview')">
+                            <img id="slidePreview" style="display:none;max-width:300px;margin-top:12px;border:1px solid var(--border-color);">
+                            <input type="hidden" id="slideImage">
                         </div>
-                        <div class="form-group">
-                            <label>رابط الزر (اختياري)</label>
-                            <input type="url" id="slideLink" placeholder="https://example.com/product">
-                        </div>
+                        <div class="form-group"><label>رابط الزر (اختياري)</label><input type="url" id="slideLink" placeholder="https://..."></div>
                         <div class="form-actions">
                             <button type="submit" class="btn btn-primary" id="slideSubmitBtn">إضافة سلايد</button>
                             <button type="button" class="btn btn-secondary" onclick="resetSliderForm()" id="slideCancelBtn" style="display:none;">إلغاء</button>
                         </div>
                     </form>
                 </div>
-
-                <div class="admin-card">
-                    <div class="card-header">
-                        <h2>السلايدات الحالية</h2>
-                    </div>
-                    <div class="slider-preview-grid" id="sliderPreviewGrid"></div>
-                </div>
+                <div class="admin-card"><div class="card-header"><h2>السلايدات الحالية</h2></div><div class="slider-preview-grid" id="sliderPreviewGrid"></div></div>
             </section>
 
             <!-- Settings -->
@@ -284,67 +142,43 @@
                 <div class="admin-card">
                     <h2>تخصيص ألوان الموقع</h2>
                     <div class="color-settings">
-                        <div class="form-group">
-                            <label>لون الخلفية الرئيسي</label>
-                            <input type="color" id="bgColor" value="#0a0a0a" onchange="updateTheme()">
-                        </div>
-                        <div class="form-group">
-                            <label>لون النص الرئيسي</label>
-                            <input type="color" id="textColor" value="#ffffff" onchange="updateTheme()">
-                        </div>
-                        <div class="form-group">
-                            <label>لون الأزرار والتأكيد</label>
-                            <input type="color" id="btnColor" value="#ffffff" onchange="updateTheme()">
-                        </div>
-                        <div class="form-group">
-                            <label>لون الخلفية الثانوي</label>
-                            <input type="color" id="bgSecondary" value="#111111" onchange="updateTheme()">
-                        </div>
+                        <div class="form-group"><label>لون الخلفية الرئيسي</label><input type="color" id="bgColor" value="#0a0a0a" onchange="updateTheme()"></div>
+                        <div class="form-group"><label>لون النص الرئيسي</label><input type="color" id="textColor" value="#ffffff" onchange="updateTheme()"></div>
+                        <div class="form-group"><label>لون الأزرار</label><input type="color" id="btnColor" value="#ffffff" onchange="updateTheme()"></div>
+                        <div class="form-group"><label>لون الخلفية الثانوي</label><input type="color" id="bgSecondary" value="#111111" onchange="updateTheme()"></div>
                     </div>
                     <div class="form-actions" style="margin-top:24px;">
                         <button class="btn btn-primary" onclick="saveTheme()">حفظ الألوان</button>
                         <button class="btn btn-secondary" onclick="resetTheme()">إعادة الافتراضي</button>
                     </div>
                 </div>
-
                 <div class="admin-card" style="margin-top:32px;">
                     <h2>ربط الخدمات</h2>
-                    <div class="form-group">
-                        <label>EmailJS Public Key</label>
-                        <input type="text" id="emailjsKey" placeholder="YOUR_PUBLIC_KEY">
-                    </div>
-                    <div class="form-group">
-                        <label>EmailJS Service ID</label>
-                        <input type="text" id="emailjsService" placeholder="YOUR_SERVICE_ID">
-                    </div>
-                    <div class="form-group">
-                        <label>EmailJS Template ID</label>
-                        <input type="text" id="emailjsTemplate" placeholder="YOUR_TEMPLATE_ID">
-                    </div>
-                    <div class="form-group">
-                        <label>Google Sheets Script URL</label>
-                        <input type="url" id="sheetsUrl" placeholder="https://script.google.com/macros/s/...">
-                    </div>
+                    <div class="form-group"><label>EmailJS Public Key</label><input type="text" id="emailjsKey"></div>
+                    <div class="form-group"><label>EmailJS Service ID</label><input type="text" id="emailjsService"></div>
+                    <div class="form-group"><label>EmailJS Template ID</label><input type="text" id="emailjsTemplate"></div>
+                    <div class="form-group"><label>Google Sheets Script URL</label><input type="url" id="sheetsUrl"></div>
                     <button class="btn btn-primary" onclick="saveSettings()">حفظ الإعدادات</button>
                 </div>
             </section>
         </div>
     </main>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="app.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            await initDatabase();
-            loadTheme();
-            showSection('dashboard', document.querySelector('.sidebar-link.active'));
-            loadDashboard();
-            loadAdminProducts();
-            loadOrders('all');
-            loadEarnings();
-            loadSliderAdmin();
-            loadSettings();
+        document.addEventListener('DOMContentLoaded', () => {
+            initFirebase();
+            auth.onAuthStateChanged(user => {
+                if (!user) { window.location.href = 'login.html'; return; }
+                document.getElementById('adminEmail').textContent = user.email;
+                loadTheme();
+                showSection('dashboard', document.querySelector('.sidebar-link.active'));
+            });
         });
     </script>
 </body>
